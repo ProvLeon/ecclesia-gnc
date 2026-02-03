@@ -1075,7 +1075,7 @@ pnpm drizzle-kit push:pg
 | Supabase Pro | $25 | $300 | Database + Storage + Auth |
 | Vercel Pro | $20 | $240 | Hosting (if needed) |
 | Redis (Upstash) | $10 | $120 | Caching |
-| SMS (Hubtel) | $100 | $1,200 | ~1000 members |
+| SMS (Arkesel) | $100 | $1,200 | ~1000 members |
 | Email (Resend) | $0 | $0 | Free tier sufficient |
 | Domain | $5 | $60 | .org domain |
 | Monitoring (Sentry) | $0 | $0 | Free tier sufficient |
