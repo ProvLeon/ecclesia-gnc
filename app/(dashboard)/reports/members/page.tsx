@@ -6,19 +6,21 @@ import { Input } from '@/components/ui/input'
 import {
   Users,
   Search,
-  ArrowLeft,
   Download,
   Phone,
   Mail,
   Calendar,
-  TrendingUp,
-  Filter,
   ChevronRight,
-  MapPin,
+  Filter,
+  ArrowLeft,
+  TrendingUp,
+  UserCheck,
+  AlertCircle,
 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { members } from '@/lib/db/schema'
 import { eq, asc } from 'drizzle-orm'
+import { StatCard, ReportFooter } from '@/components/reports'
 
 async function getAllMembers() {
   return db
@@ -47,16 +49,16 @@ export default async function MembersReportPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header with Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-4">
           <Link href="/reports">
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
             </Button>
           </Link>
           <div>
@@ -74,76 +76,35 @@ export default async function MembersReportPage() {
         </Button>
       </div>
 
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
-                  Total Members
-                </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-                  {stats.total}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  Active members
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-200 dark:bg-blue-800/50">
-                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">
-                  New This Month
-                </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-                  {stats.newThisMonth}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  Recent additions
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-200 dark:bg-green-800/50">
-                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-                  Joined This Year
-                </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-                  {stats.joinedThisYear}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  YTD members
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-200 dark:bg-amber-800/50">
-                <Calendar className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          title="Total Members"
+          value={stats.total}
+          description="Active members"
+          icon={Users}
+          variant="primary"
+        />
+        <StatCard
+          title="New This Month"
+          value={stats.newThisMonth}
+          description="Recent additions"
+          icon={UserCheck}
+          variant="success"
+        />
+        <StatCard
+          title="Joined This Year"
+          value={stats.joinedThisYear}
+          description="YTD members"
+          icon={Calendar}
+          variant="accent"
+        />
       </div>
 
-      {/* Search and Filter Controls */}
+      {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
           <Input
             placeholder="Search members by name, phone, or email..."
             className="pl-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
@@ -377,6 +338,13 @@ export default async function MembersReportPage() {
           </div>
         </div>
       )}
+
+      {/* Report Footer */}
+      <ReportFooter
+        reportType="Member Directory"
+        generatedDate={new Date()}
+        dataSource="Active Member Records"
+      />
     </div>
   )
 }

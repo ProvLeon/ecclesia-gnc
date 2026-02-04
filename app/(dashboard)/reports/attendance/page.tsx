@@ -3,19 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   CalendarCheck,
-  ArrowLeft,
   Download,
   Users,
   TrendingUp,
   TrendingDown,
-  Calendar,
   BarChart3,
   ChevronRight,
   AlertCircle,
+  ArrowLeft,
+  Activity,
 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { services } from '@/lib/db/schema'
 import { sql, desc } from 'drizzle-orm'
+import { StatCard, ReportHeader, ReportFooter } from '@/components/reports'
 
 async function getAttendanceReport() {
   const recentServices = await db
@@ -57,127 +58,46 @@ export default async function AttendanceReportPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-4">
-          <Link href="/reports">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <ArrowLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
-              Attendance Report
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
-              Service attendance summary and trend analysis
-            </p>
-          </div>
-        </div>
-        <Button className="gap-2 bg-primary dark:bg-accent hover:opacity-90 text-primary-foreground dark:text-primary w-full sm:w-auto">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
-      </div>
+      <ReportHeader
+        title="Attendance Report"
+        description="Service attendance summary and trend analysis"
+        exportLabel="Export CSV"
+      />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
-                  Total Attendance
-                </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-                  {totalAttendance}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  Last {serviceCount} services
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-200 dark:bg-blue-800/50">
-                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">
-                  Average per Service
-                </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-                  {avgAttendance}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  Members per service
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-200 dark:bg-green-800/50">
-                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-                  Peak Attendance
-                </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-                  {maxAttendance}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  Highest service
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-200 dark:bg-amber-800/50">
-                <BarChart3 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`border-slate-200 dark:border-slate-700 bg-gradient-to-br ${attendanceTrend >= 0
-          ? 'from-rose-50 to-rose-100/50 dark:from-rose-950/20 dark:to-rose-900/20'
-          : 'from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/20'
-          }`}>
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className={`text-xs font-semibold uppercase tracking-wider ${attendanceTrend >= 0
-                  ? 'text-rose-700 dark:text-rose-300'
-                  : 'text-orange-700 dark:text-orange-300'
-                  }`}>
-                  Attendance Trend
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">
-                    {Math.abs(Math.round(attendanceTrend))}%
-                  </p>
-                  {attendanceTrend >= 0 ? (
-                    <TrendingUp className="h-6 w-6 text-rose-600 dark:text-rose-400" />
-                  ) : (
-                    <TrendingDown className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                  )}
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  {attendanceTrend >= 0 ? 'Growth' : 'Decline'} vs last service
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Attendance"
+          value={totalAttendance}
+          description={`Last ${serviceCount} services`}
+          icon={Users}
+          variant="primary"
+        />
+        <StatCard
+          title="Average per Service"
+          value={avgAttendance}
+          description="Members per service"
+          icon={TrendingUp}
+          variant="success"
+        />
+        <StatCard
+          title="Peak Attendance"
+          value={maxAttendance}
+          description="Highest service"
+          icon={BarChart3}
+          variant="accent"
+        />
+        <StatCard
+          title="Attendance Trend"
+          value={`${Math.abs(Math.round(attendanceTrend))}%`}
+          description={attendanceTrend >= 0 ? 'Growth' : 'Decline'}
+          icon={attendanceTrend >= 0 ? TrendingUp : TrendingDown}
+          variant={attendanceTrend >= 0 ? 'success' : 'warning'}
+          trend={{
+            value: Math.abs(Math.round(attendanceTrend)),
+            direction: attendanceTrend >= 0 ? 'up' : 'down',
+          }}
+        />
       </div>
 
       {/* Insights Section */}
@@ -186,7 +106,7 @@ export default async function AttendanceReportPage() {
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <CalendarCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               Reporting Period
             </CardTitle>
@@ -378,22 +298,12 @@ export default async function AttendanceReportPage() {
         </CardContent>
       </Card>
 
-      {/* Report Footer */}
-      <Card className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-        <CardContent className="pt-5">
-          <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-            <p>
-              <strong>Report Type:</strong> Attendance Summary
-            </p>
-            <p>
-              <strong>Generated:</strong> {new Date().toLocaleString()}
-            </p>
-            <p>
-              <strong>Data Source:</strong> Service Attendance Records
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Footer */}
+      <ReportFooter
+        reportType="Attendance Summary"
+        dataSource="Service Attendance Records"
+        period={`Last ${serviceCount} services`}
+      />
     </div>
   )
 }

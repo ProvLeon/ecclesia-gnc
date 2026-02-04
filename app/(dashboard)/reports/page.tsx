@@ -188,7 +188,7 @@ export default function ReportsPage() {
             </p>
           </div>
           <Link href="/reports/analytics" className="hidden sm:block">
-            <Button variant="default" className="gap-2 hover:shadow-lg transition-shadow text-primary-foreground dark:text-primary">
+            <Button variant="default" className="gap-2 transition-shadow text-primary-foreground dark:text-primary">
               <TrendingUp className="h-4 w-4" />
               View Analytics
             </Button>
