@@ -82,11 +82,11 @@ export async function createFollowUp(data: {
     return { success: true }
 }
 
-export async function completeFollowUp(id: string, notes?: string) {
+export async function completeFollowUp(id: string, data?: { outcome?: string; notes?: string }) {
     await db.update(followUps).set({
         status: 'completed',
         completedDate: new Date().toISOString().split('T')[0],
-        notes: notes,
+        notes: data?.notes ? `${data.outcome || 'Completed'}: ${data.notes}` : data?.outcome || 'Completed',
     }).where(eq(followUps.id, id))
 
     revalidatePath('/shepherding')

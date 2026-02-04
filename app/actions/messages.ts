@@ -154,3 +154,45 @@ export async function getMembersForSMS(filter?: { gender?: string; status?: stri
         .orderBy(members.firstName)
         .limit(500)
 }
+
+export async function sendBroadcast(data: { message: string; recipientType: string }) {
+    const { message, recipientType } = data
+
+    if (!ARKESEL_API_KEY) {
+        return { success: false, error: 'SMS API not configured' }
+    }
+
+    // Get recipients based on type
+    let recipientList: { id: string; phone: string | null }[] = []
+
+    if (recipientType === 'all') {
+        recipientList = await db
+            .select({ id: members.id, phone: members.phonePrimary })
+            .from(members)
+            .where(sql`${members.phonePrimary} IS NOT NULL`)
+    } else if (recipientType === 'active') {
+        recipientList = await db
+            .select({ id: members.id, phone: members.phonePrimary })
+            .from(members)
+            .where(and(eq(members.memberStatus, 'active'), sql`${members.phonePrimary} IS NOT NULL`))
+    } else if (recipientType === 'leaders') {
+        // For now, just get active members - extend this when you have leader roles
+        recipientList = await db
+            .select({ id: members.id, phone: members.phonePrimary })
+            .from(members)
+            .where(and(eq(members.memberStatus, 'active'), sql`${members.phonePrimary} IS NOT NULL`))
+            .limit(50)
+    }
+
+    const validRecipients = recipientList.filter(r => r.phone).map(r => ({
+        memberId: r.id,
+        phone: r.phone!,
+    }))
+
+    if (validRecipients.length === 0) {
+        return { success: false, error: 'No recipients with valid phone numbers' }
+    }
+
+    // Use existing sendSMS function
+    return sendSMS({ recipients: validRecipients, message })
+}
