@@ -382,6 +382,44 @@ export const smsCredits = pgTable('sms_credits', {
 })
 
 // ============================================================================
+// SMS_TEMPLATES TABLE - Reusable message templates
+// ============================================================================
+
+export const smsTemplates = pgTable('sms_templates', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 100 }).notNull(),
+    category: varchar('category', { length: 50 }).notNull(), // reminder, birthday, event, general
+    content: text('content').notNull(),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// ============================================================================
+// EVENTS TABLE - Church events
+// ============================================================================
+
+export const events = pgTable('events', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    eventType: varchar('event_type', { length: 50 }), // Conference, Retreat, Outreach, etc.
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date').notNull(),
+    startTime: varchar('start_time', { length: 10 }),
+    endTime: varchar('end_time', { length: 10 }),
+    location: varchar('location', { length: 255 }),
+    departmentId: uuid('department_id').references(() => departments.id),
+    registrationRequired: boolean('registration_required').notNull().default(false),
+    maxAttendees: integer('max_attendees'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 

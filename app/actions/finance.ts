@@ -186,3 +186,85 @@ export async function getMembersForFinance() {
         .orderBy(members.firstName)
         .limit(200)
 }
+
+// Expense Approval Workflow
+export async function getPendingExpenses() {
+    return db
+        .select()
+        .from(expenses)
+        .where(eq(expenses.status, 'pending'))
+        .orderBy(desc(expenses.createdAt))
+}
+
+export async function getExpensesByStatus(status: 'pending' | 'approved' | 'rejected', page = 1, pageSize = 10) {
+    const offset = (page - 1) * pageSize
+
+    const results = await db
+        .select()
+        .from(expenses)
+        .where(eq(expenses.status, status))
+        .orderBy(desc(expenses.expenseDate))
+        .limit(pageSize)
+        .offset(offset)
+
+    const [countResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(expenses)
+        .where(eq(expenses.status, status))
+
+    return {
+        data: results,
+        pagination: { page, pageSize, total: Number(countResult?.count || 0) },
+    }
+}
+
+export async function approveExpense(id: string) {
+    const [updated] = await db
+        .update(expenses)
+        .set({
+            status: 'approved',
+            updatedAt: new Date(),
+        })
+        .where(eq(expenses.id, id))
+        .returning()
+
+    revalidatePath('/finance')
+    revalidatePath('/finance/expenses')
+    return { success: true, expense: updated }
+}
+
+export async function rejectExpense(id: string) {
+    const [updated] = await db
+        .update(expenses)
+        .set({
+            status: 'rejected',
+            updatedAt: new Date(),
+        })
+        .where(eq(expenses.id, id))
+        .returning()
+
+    revalidatePath('/finance')
+    revalidatePath('/finance/expenses')
+    return { success: true, expense: updated }
+}
+
+export async function getExpenseStats() {
+    const [stats] = await db
+        .select({
+            pending: sql<number>`count(*) filter (where ${expenses.status} = 'pending')`,
+            approved: sql<number>`count(*) filter (where ${expenses.status} = 'approved')`,
+            rejected: sql<number>`count(*) filter (where ${expenses.status} = 'rejected')`,
+            pendingAmount: sql<number>`COALESCE(SUM(amount) filter (where ${expenses.status} = 'pending'), 0)`,
+            approvedAmount: sql<number>`COALESCE(SUM(amount) filter (where ${expenses.status} = 'approved'), 0)`,
+        })
+        .from(expenses)
+
+    return {
+        pending: Number(stats?.pending || 0),
+        approved: Number(stats?.approved || 0),
+        rejected: Number(stats?.rejected || 0),
+        pendingAmount: Number(stats?.pendingAmount || 0),
+        approvedAmount: Number(stats?.approvedAmount || 0),
+    }
+}
+

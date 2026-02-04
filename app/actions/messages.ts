@@ -196,3 +196,83 @@ export async function sendBroadcast(data: { message: string; recipientType: stri
     // Use existing sendSMS function
     return sendSMS({ recipients: validRecipients, message })
 }
+
+// ============================================================================
+// SMS TEMPLATES
+// ============================================================================
+
+import { smsTemplates } from '@/lib/db/schema'
+
+export async function getSmsTemplates() {
+    return db
+        .select()
+        .from(smsTemplates)
+        .where(eq(smsTemplates.isActive, true))
+        .orderBy(desc(smsTemplates.createdAt))
+}
+
+export async function getSmsTemplatesByCategory(category: string) {
+    return db
+        .select()
+        .from(smsTemplates)
+        .where(and(
+            eq(smsTemplates.isActive, true),
+            eq(smsTemplates.category, category)
+        ))
+        .orderBy(smsTemplates.name)
+}
+
+export async function getSmsTemplate(id: string) {
+    const [template] = await db
+        .select()
+        .from(smsTemplates)
+        .where(eq(smsTemplates.id, id))
+        .limit(1)
+    return template
+}
+
+export async function createSmsTemplate(data: {
+    name: string
+    category: string
+    content: string
+}) {
+    const [template] = await db
+        .insert(smsTemplates)
+        .values({
+            name: data.name,
+            category: data.category,
+            content: data.content,
+        })
+        .returning()
+
+    revalidatePath('/messages/templates')
+    return { success: true, template }
+}
+
+export async function updateSmsTemplate(id: string, data: {
+    name?: string
+    category?: string
+    content?: string
+}) {
+    const [updated] = await db
+        .update(smsTemplates)
+        .set({
+            ...data,
+            updatedAt: new Date(),
+        })
+        .where(eq(smsTemplates.id, id))
+        .returning()
+
+    revalidatePath('/messages/templates')
+    return { success: true, template: updated }
+}
+
+export async function deleteSmsTemplate(id: string) {
+    await db
+        .update(smsTemplates)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(smsTemplates.id, id))
+
+    revalidatePath('/messages/templates')
+    return { success: true }
+}

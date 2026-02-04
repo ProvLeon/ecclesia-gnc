@@ -106,3 +106,45 @@ export async function getMembersForFollowUp() {
         .orderBy(members.firstName)
         .limit(200)
 }
+
+// Shepherd Assignments
+import { shepherdAssignments } from '@/lib/db/schema'
+
+export async function assignMemberToShepherd(shepherdId: string, memberId: string) {
+    // Check if already assigned
+    const [existing] = await db
+        .select({ id: shepherdAssignments.id })
+        .from(shepherdAssignments)
+        .where(and(
+            eq(shepherdAssignments.shepherdId, shepherdId),
+            eq(shepherdAssignments.memberId, memberId),
+            eq(shepherdAssignments.isActive, true)
+        ))
+        .limit(1)
+
+    if (existing) {
+        return { success: false, error: 'Already assigned' }
+    }
+
+    await db.insert(shepherdAssignments).values({
+        shepherdId,
+        memberId,
+        assignedDate: new Date().toISOString().split('T')[0],
+        isActive: true,
+    })
+
+    revalidatePath('/shepherding')
+    revalidatePath('/shepherding/assignments')
+    return { success: true }
+}
+
+export async function unassignMember(assignmentId: string) {
+    await db
+        .update(shepherdAssignments)
+        .set({ isActive: false })
+        .where(eq(shepherdAssignments.id, assignmentId))
+
+    revalidatePath('/shepherding')
+    revalidatePath('/shepherding/assignments')
+    return { success: true }
+}

@@ -74,7 +74,7 @@ export default async function ShepherdingPage() {
                     ) : (
                         <div className="space-y-2">
                             {scheduledFollowUps.map((f) => {
-                                const isOverdue = new Date(f.scheduledDate) < new Date()
+                                const isOverdue = f.scheduledDate ? new Date(f.scheduledDate) < new Date() : false
                                 return (
                                     <div
                                         key={f.id}
@@ -90,7 +90,7 @@ export default async function ShepherdingPage() {
                                                     <Badge variant="outline" className="text-xs py-0 h-5 capitalize">{f.type}</Badge>
                                                     <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-amber-600' : 'text-slate-500'}`}>
                                                         <Calendar className="h-3 w-3" />
-                                                        {format(new Date(f.scheduledDate), 'MMM d')}
+                                                        {f.scheduledDate ? format(new Date(f.scheduledDate), 'MMM d') : '-'}
                                                         {isOverdue && <AlertTriangle className="h-3 w-3 ml-0.5" />}
                                                     </span>
                                                 </div>
