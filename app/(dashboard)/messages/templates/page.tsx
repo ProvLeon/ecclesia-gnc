@@ -2,9 +2,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { PlusCircle, FileText, ArrowLeft, Pencil, Trash2, MessageSquare } from 'lucide-react'
+import { PlusCircle, FileText, ArrowLeft, MessageSquare } from 'lucide-react'
 import { getSmsTemplates } from '@/app/actions/messages'
 import { TemplateActions } from './template-actions'
+import { NewTemplateModal } from '@/components/modals'
 
 const CATEGORY_COLORS: Record<string, string> = {
     reminder: 'bg-blue-100 text-blue-700',
@@ -35,12 +36,7 @@ export default async function TemplatesPage() {
                         </p>
                     </div>
                 </div>
-                <Link href="/messages/templates/new">
-                    <Button>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Create Template
-                    </Button>
-                </Link>
+                <NewTemplateModal />
             </div>
 
             {/* Templates Grid */}
@@ -54,12 +50,12 @@ export default async function TemplatesPage() {
                         <p className="text-sm text-slate-500 mb-4">
                             Create your first template to speed up message sending
                         </p>
-                        <Link href="/messages/templates/new">
+                        <NewTemplateModal trigger={
                             <Button variant="outline">
                                 <PlusCircle className="h-4 w-4 mr-2" />
                                 Create Template
                             </Button>
-                        </Link>
+                        } />
                     </CardContent>
                 </Card>
             ) : (

@@ -17,7 +17,9 @@ import {
     Heart,
     User,
     AlertCircle,
+    Shield,
 } from 'lucide-react'
+import { PromoteToShepherdModal } from '@/components/modals'
 
 interface PageProps {
     params: Promise<{ id: string }>
@@ -66,12 +68,24 @@ export default async function MemberProfilePage({ params }: PageProps) {
                         </p>
                     </div>
                 </div>
-                <Link href={`/members/${id}/edit`}>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <PromoteToShepherdModal
+                        memberId={id}
+                        memberName={`${member.firstName} ${member.lastName}`}
+                        trigger={
+                            <Button variant="outline">
+                                <Shield className="h-4 w-4 mr-2" />
+                                Make Shepherd
+                            </Button>
+                        }
+                    />
+                    <Link href={`/members/${id}/edit`}>
+                        <Button className="bg-blue-600 hover:bg-blue-700">
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">

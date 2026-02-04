@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Heart, Clock, CheckCircle, AlertTriangle, Plus, Phone, Calendar, ArrowRight } from 'lucide-react'
+import { Heart, Clock, CheckCircle, AlertTriangle, Phone, Calendar, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { getShepherdingStats, getFollowUps } from '@/app/actions/shepherding'
 import { format } from 'date-fns'
+import { NewFollowUpModal } from '@/components/modals'
 
 export default async function ShepherdingPage() {
     const [stats, { data: scheduledFollowUps }, { data: completedFollowUps }] = await Promise.all([
@@ -21,11 +22,14 @@ export default async function ShepherdingPage() {
                     <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Shepherding</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Pastoral care and member follow-ups</p>
                 </div>
-                <Link href="/shepherding/new">
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />Schedule Follow-up
-                    </Button>
-                </Link>
+                <div className="flex gap-2">
+                    <Link href="/shepherding/assignments">
+                        <Button variant="outline">
+                            Assignments
+                        </Button>
+                    </Link>
+                    <NewFollowUpModal />
+                </div>
             </div>
 
             {/* Stats Grid */}

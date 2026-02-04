@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, Bell, Shield, Database, ChevronRight, Building2, Key, Palette } from 'lucide-react'
+import { User, Users, Bell, Shield, Database, ChevronRight, Building2, Key, Palette } from 'lucide-react'
 import Link from 'next/link'
 
 const settingsItems = [
@@ -8,6 +8,12 @@ const settingsItems = [
         title: 'Profile',
         description: 'Update your account details and personal information',
         href: '/settings/profile',
+    },
+    {
+        icon: Users,
+        title: 'User Management',
+        description: 'Manage system users, roles and permissions',
+        href: '/settings/users',
     },
     {
         icon: Shield,

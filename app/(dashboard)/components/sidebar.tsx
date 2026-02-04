@@ -15,6 +15,7 @@ import {
     BarChart3,
     Settings,
     ChevronLeft,
+    Calendar,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ const navigation = [
     { name: 'Members', href: '/members', icon: Users },
     { name: 'Finance', href: '/finance', icon: Wallet },
     { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
+    { name: 'Events', href: '/events', icon: Calendar },
     { name: 'Shepherding', href: '/shepherding', icon: Heart },
     { name: 'Messages', href: '/messages', icon: MessageSquare },
     { name: 'Departments', href: '/departments', icon: Building2 },

@@ -148,3 +148,49 @@ export async function unassignMember(assignmentId: string) {
     revalidatePath('/shepherding/assignments')
     return { success: true }
 }
+
+// Promote member to shepherd
+import { shepherds } from '@/lib/db/schema'
+
+export async function promoteToShepherd(memberId: string) {
+    // Check if already a shepherd
+    const [existing] = await db
+        .select({ id: shepherds.id })
+        .from(shepherds)
+        .where(and(
+            eq(shepherds.memberId, memberId),
+            eq(shepherds.isActive, true)
+        ))
+        .limit(1)
+
+    if (existing) {
+        return { success: false, error: 'Already a shepherd' }
+    }
+
+    const [shepherd] = await db.insert(shepherds).values({
+        memberId,
+        assignedDate: new Date().toISOString().split('T')[0],
+        isActive: true,
+    }).returning()
+
+    revalidatePath('/shepherding')
+    revalidatePath('/shepherding/assignments')
+    revalidatePath('/members')
+    return { success: true, shepherdId: shepherd.id }
+}
+
+export async function getActiveShepherds() {
+    return db
+        .select({
+            id: shepherds.id,
+            memberId: shepherds.memberId,
+            name: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
+            phone: members.phonePrimary,
+            assignedDate: shepherds.assignedDate,
+        })
+        .from(shepherds)
+        .innerJoin(members, eq(shepherds.memberId, members.id))
+        .where(eq(shepherds.isActive, true))
+        .orderBy(members.firstName)
+}
+

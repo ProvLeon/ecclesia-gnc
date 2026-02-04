@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MessageSquare, Send, Check, X, Clock, History, ArrowRight } from 'lucide-react'
+import { MessageSquare, Send, Check, X, Clock, History, ArrowRight, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { getMessageStats, getMessages } from '@/app/actions/messages'
 import { format } from 'date-fns'
@@ -20,11 +20,18 @@ export default async function MessagesPage() {
                     <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Messages</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Send SMS to church members</p>
                 </div>
-                <Link href="/messages/compose">
-                    <Button>
-                        <Send className="h-4 w-4 mr-2" />Compose Message
-                    </Button>
-                </Link>
+                <div className="flex gap-2">
+                    <Link href="/messages/templates">
+                        <Button variant="outline">
+                            <FileText className="h-4 w-4 mr-2" />Templates
+                        </Button>
+                    </Link>
+                    <Link href="/messages/compose">
+                        <Button>
+                            <Send className="h-4 w-4 mr-2" />Compose Message
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Stats Grid */}

@@ -106,7 +106,9 @@ export default async function ShepherdingReportPage() {
                                             <p className="text-sm font-medium text-slate-900 dark:text-white">{f.memberName}</p>
                                             <p className="text-xs text-slate-500 capitalize">{f.type}</p>
                                         </div>
-                                        <Badge variant="outline" className="text-xs">{format(new Date(f.scheduledDate), 'MMM d')}</Badge>
+                                        <Badge variant="outline" className="text-xs">
+                                            {f.scheduledDate ? format(new Date(f.scheduledDate), 'MMM d') : '-'}
+                                        </Badge>
                                     </div>
                                 ))}
                             </div>

@@ -14,7 +14,11 @@ interface PageProps {
 export default async function MessageHistoryPage({ searchParams }: PageProps) {
     const params = await searchParams
     const page = parseInt(params.page || '1', 10)
-    const { data: messages, pagination } = await getMessages(page, 20)
+    const { data: messages } = await getMessages(page, 20)
+
+    // Calculate simple pagination
+    const totalPages = Math.max(1, Math.ceil(messages.length / 20))
+    const pagination = { page, total: messages.length, totalPages }
 
     return (
         <div className="space-y-6">

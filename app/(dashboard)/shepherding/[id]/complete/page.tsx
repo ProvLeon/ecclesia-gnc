@@ -35,7 +35,7 @@ export default function CompleteFollowUpPage({ params }: PageProps) {
                 router.push('/shepherding')
                 router.refresh()
             } else {
-                setError(result.error || 'Failed to complete follow-up')
+                setError('Failed to complete follow-up')
             }
         } catch (err) {
             setError('An error occurred')
