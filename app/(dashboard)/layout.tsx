@@ -4,25 +4,35 @@ import { Sidebar } from './components/sidebar'
 import { Header } from './components/header'
 
 export default async function DashboardLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode
+  children: React.ReactNode
 }) {
-    const user = await getUser()
+  const user = await getUser()
 
-    if (!user) {
-        redirect('/login')
-    }
+  if (!user) {
+    redirect('/login')
+  }
 
-    return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-            <Sidebar />
-            <div className="lg:pl-72">
-                <Header user={user} />
-                <main className="py-6 px-4 sm:px-6 lg:px-8">
-                    {children}
-                </main>
-            </div>
-        </div>
-    )
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <Sidebar />
+      <div className="lg:pl-72 flex flex-col">
+        <Header user={user} />
+        <main
+          id="main-content"
+          className="py-6 px-4 sm:px-6 lg:px-8 flex-1"
+          role="main"
+        >
+          {children}
+        </main>
+        <footer
+          role="contentinfo"
+          className="border-t border-slate-200 dark:border-slate-700 px-4 sm:px-6 lg:px-8 py-4 text-sm text-slate-500 dark:text-slate-400"
+        >
+          <p>&copy; 2025 Ecclesia GNC. All rights reserved.</p>
+        </footer>
+      </div>
+    </div>
+  )
 }

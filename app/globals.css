@@ -4,122 +4,383 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 16px);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+    --radius: 0.625rem;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.13 0.04 264.8);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.13 0.04 264.8);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.13 0.04 264.8);
+    /* Navy Blue Primary - #001A4D */
+    --primary: oklch(52.53% 0.2468 262.2);
+    --primary-foreground: oklch(1 0 0);
+    /* Gold/Yellow Accent - #FFC900 */
+    --accent: oklch(0.85 0.21 106.8);
+    --accent-foreground: oklch(0.13 0.04 264.8);
+    /* Gold Secondary - lighter shade */
+    --secondary: oklch(0.92 0.12 104.5);
+    --secondary-foreground: oklch(0.13 0.04 264.8);
+    --muted: oklch(0.92 0.006 264.8);
+    --muted-foreground: oklch(0.55 0.046 257.417);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.93 0.013 255.5);
+    --input: oklch(0.93 0.013 255.5);
+    --ring: oklch(0.85 0.21 106.8);
+    /* Chart colors - navy and gold based */
+    --chart-1: oklch(0.16 0.08 254.2);
+    --chart-2: oklch(0.85 0.21 106.8);
+    --chart-3: oklch(0.35 0.08 254.2);
+    --chart-4: oklch(0.92 0.12 104.5);
+    --chart-5: oklch(0.25 0.06 254.2);
+    /* Sidebar - Navy blue primary */
+    --sidebar: oklch(0.16 0.08 254.2);
+    --sidebar-foreground: oklch(1 0 0);
+    --sidebar-primary: oklch(0.85 0.21 106.8);
+    --sidebar-primary-foreground: oklch(0.16 0.08 254.2);
+    --sidebar-accent: oklch(0.92 0.12 104.5);
+    --sidebar-accent-foreground: oklch(0.16 0.08 254.2);
+    --sidebar-border: oklch(0.25 0.06 254.2);
+    --sidebar-ring: oklch(0.85 0.21 106.8);
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+    --background: oklch(0.13 0.04 264.8);
+    --foreground: oklch(0.98 0.003 247.9);
+    --card: oklch(0.22 0.05 254.2);
+    --card-foreground: oklch(0.98 0.003 247.9);
+    --popover: oklch(0.22 0.05 254.2);
+    --popover-foreground: oklch(0.98 0.003 247.9);
+    /* Navy Blue Primary - lighter for dark mode */
+    --primary: oklch(0.92 0.12 104.5);
+    --primary-foreground: oklch(0.16 0.08 254.2);
+    /* Gold Accent - brighter in dark mode */
+    --accent: oklch(0.88 0.22 107.5);
+    --accent-foreground: oklch(0.16 0.08 254.2);
+    /* Gold Secondary */
+    --secondary: oklch(0.80 0.18 105.2);
+    --secondary-foreground: oklch(0.98 0.003 247.9);
+    --muted: oklch(0.35 0.04 254.2);
+    --muted-foreground: oklch(0.75 0.03 254.2);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 12%);
+    --input: oklch(1 0 0 / 18%);
+    --ring: oklch(0.88 0.22 107.5);
+    /* Chart colors - dark mode */
+    --chart-1: oklch(0.92 0.12 104.5);
+    --chart-2: oklch(0.88 0.22 107.5);
+    --chart-3: oklch(0.70 0.15 107.0);
+    --chart-4: oklch(0.80 0.18 105.2);
+    --chart-5: oklch(0.60 0.12 106.5);
+    /* Sidebar - Navy blue dark */
+    --sidebar: oklch(0.16 0.08 254.2);
+    --sidebar-foreground: oklch(0.98 0.003 247.9);
+    --sidebar-primary: oklch(0.92 0.12 104.5);
+    --sidebar-primary-foreground: oklch(0.16 0.08 254.2);
+    --sidebar-accent: oklch(0.88 0.22 107.5);
+    --sidebar-accent-foreground: oklch(0.16 0.08 254.2);
+    --sidebar-border: oklch(1 0 0 / 12%);
+    --sidebar-ring: oklch(0.88 0.22 107.5);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    /* ===== Accessibility: Focus Visible ===== */
+    :focus-visible {
+        outline: 2px solid hsl(var(--ring));
+        outline-offset: 2px;
+        border-radius: 2px;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 2px solid hsl(var(--ring));
+        outline-offset: 2px;
+    }
+
+    /* ===== Accessibility: Skip to Main Content ===== */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
+
+    .sr-only:focus,
+    .sr-only:focus-visible {
+        position: static;
+        width: auto;
+        height: auto;
+        padding: inherit;
+        margin: inherit;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+    }
+
+    /* ===== Accessibility: Reduced Motion ===== */
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+
+    /* ===== Touch Targets: Minimum 44x44px ===== */
+    button,
+    a,
+    input[type="checkbox"],
+    input[type="radio"],
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"] {
+        @apply min-h-[44px] min-w-[44px];
+    }
+
+    /* Form inputs minimum height */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+        @apply min-h-[44px];
+        font-size: 16px;
+        /* Prevent zoom on mobile input focus */
+    }
+
+    /* ===== Mobile-First Responsive ===== */
+    @media (max-width: 640px) {
+
+        /* Prevent iOS Safari from zooming on input focus */
+        input,
+        select,
+        textarea {
+            font-size: 16px !important;
+        }
+
+        /* Increase line height for readability on small screens */
+        body {
+            line-height: 1.6;
+        }
+
+        /* More padding on mobile */
+        main {
+            padding: 1rem;
+        }
+
+        /* Full-width modals on mobile */
+        [role="dialog"] {
+            width: 100vw;
+            height: auto;
+            max-height: 100vh;
+            border-radius: 0;
+            margin: 0;
+        }
+
+        /* Stack form elements */
+        .form-group {
+            width: 100%;
+        }
+
+        /* Larger touch targets on mobile */
+        button,
+        a,
+        [role="button"] {
+            min-height: 48px;
+            min-width: 48px;
+        }
+    }
+
+    /* ===== Dark Mode Color Contrast ===== */
+    /* Ensure sufficient text contrast in dark mode */
+    /* High contrast for important elements */
+    /*.dark {
+
+        body {
+            @apply text-slate-50;
+        }
+
+        p,
+        span,
+        label {
+            @apply text-slate-200;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            @apply text-slate-50;
+        }
+    }*/
+
+    /* ===== Semantic HTML Spacing ===== */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply my-0 font-semibold;
+    }
+
+    h1 {
+        @apply text-3xl;
+    }
+
+    h2 {
+        @apply text-2xl;
+    }
+
+    h3 {
+        @apply text-xl;
+    }
+
+    article,
+    section,
+    aside,
+    nav {
+        @apply my-6;
+    }
+
+    p {
+        @apply my-0 leading-relaxed;
+    }
+
+    ul,
+    ol {
+        @apply ml-6 my-4;
+    }
+
+    li {
+        @apply my-1;
+    }
+
+    /* ===== Link Accessibility ===== */
+    /* Only underline actual text links, not buttons or nav items */
+    a:not([class*="btn"]):not([class*="button"]):not([class*="nav"]):not([class*="sidebar"]) {
+        @apply focus-visible:underline;
+    }
+
+    /* Ensure focus is always visible on links */
+    a {
+        @apply focus-visible:outline-2 focus-visible:outline-offset-2;
+    }
+
+    /* ===== Table Accessibility ===== */
+    table {
+        @apply w-full border-collapse my-4;
+    }
+
+    th,
+    td {
+        @apply p-3 border border-slate-200 dark:border-slate-700;
+        text-align: left;
+    }
+
+    th {
+        @apply bg-slate-50 dark:bg-slate-900 font-semibold;
+    }
+
+    tbody tr:hover {
+        @apply bg-slate-50 dark:bg-slate-800/50;
+    }
+
+    /* ===== High Contrast Mode Support ===== */
+    @media (prefers-contrast: more) {
+        * {
+            border-width: 2px;
+        }
+
+        button,
+        a {
+            text-decoration: underline;
+        }
+    }
+
+    /* ===== Print Styles for Accessibility ===== */
+    @media print {
+        a[href]::after {
+            content: " (" attr(href) ")";
+        }
+
+        .sr-only {
+            position: static;
+        }
+
+        [aria-hidden="true"] {
+            display: none;
+        }
+    }
 }

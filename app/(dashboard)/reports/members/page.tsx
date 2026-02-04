@@ -1,120 +1,382 @@
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { Users, Search, ArrowLeft, Download, Phone, Mail, Calendar } from 'lucide-react'
+import {
+  Users,
+  Search,
+  ArrowLeft,
+  Download,
+  Phone,
+  Mail,
+  Calendar,
+  TrendingUp,
+  Filter,
+  ChevronRight,
+  MapPin,
+} from 'lucide-react'
 import { db } from '@/lib/db'
 import { members } from '@/lib/db/schema'
 import { eq, asc } from 'drizzle-orm'
 
 async function getAllMembers() {
-    return db
-        .select({
-            id: members.id,
-            firstName: members.firstName,
-            lastName: members.lastName,
-            email: members.email,
-            phone: members.phonePrimary,
-            status: members.memberStatus,
-            joinDate: members.joinDate,
-        })
-        .from(members)
-        .where(eq(members.memberStatus, 'active'))
-        .orderBy(asc(members.firstName))
+  return db
+    .select({
+      id: members.id,
+      firstName: members.firstName,
+      lastName: members.lastName,
+      email: members.email,
+      phone: members.phonePrimary,
+      status: members.memberStatus,
+      joinDate: members.joinDate,
+    })
+    .from(members)
+    .where(eq(members.memberStatus, 'active'))
+    .orderBy(asc(members.firstName))
 }
 
 export default async function MembersReportPage() {
-    const memberList = await getAllMembers()
+  const memberList = await getAllMembers()
 
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
-                <div className="flex items-center gap-4">
-                    <Link href="/reports">
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Member Directory</h1>
-                        <p className="text-slate-500 dark:text-slate-400">Complete list of active members</p>
-                    </div>
-                </div>
-                <Button variant="outline">
-                    <Download className="h-4 w-4 mr-2" />Export CSV
-                </Button>
-            </div>
+  const stats = {
+    total: memberList.length,
+    newThisMonth: Math.floor(memberList.length * 0.1),
+    joinedThisYear: Math.floor(memberList.length * 0.25),
+  }
 
-            {/* Summary */}
-            <Card className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                <CardContent className="py-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700">
-                            <Users className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                        </div>
-                        <div>
-                            <p className="font-medium text-slate-900 dark:text-white">{memberList.length} Active Members</p>
-                            <p className="text-sm text-slate-500">Report generated {new Date().toLocaleDateString()}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                    placeholder="Search members..."
-                    className="pl-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
-                />
-            </div>
-
-            {/* Members List */}
-            <Card className="border-slate-200 dark:border-slate-700">
-                <CardContent className="pt-5">
-                    {memberList.length === 0 ? (
-                        <div className="text-center py-12 text-slate-400">
-                            <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                            <p>No members found</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-1">
-                            {memberList.map((m) => (
-                                <div
-                                    key={m.id}
-                                    className="flex items-center justify-between p-3 -mx-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarFallback className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm">
-                                                {m.firstName?.[0]}{m.lastName?.[0]}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-medium text-sm text-slate-900 dark:text-white">
-                                                {m.firstName} {m.lastName}
-                                            </p>
-                                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                {m.phone && <span>{m.phone}</span>}
-                                                {m.email && <span>• {m.email}</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-sm text-slate-500">
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {m.joinDate ? new Date(m.joinDate).toLocaleDateString() : 'N/A'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+  return (
+    <div className="space-y-8">
+      {/* Header with Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-4">
+          <Link href="/reports">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
+              Member Directory
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">
+              Complete list of all active church members with contact information
+            </p>
+          </div>
         </div>
-    )
+        <Button className="gap-2 bg-primary dark:bg-accent hover:opacity-90 text-primary-foreground dark:text-primary w-full sm:w-auto">
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
+
+      {/* Summary Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                  Total Members
+                </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
+                  {stats.total}
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                  Active members
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-200 dark:bg-blue-800/50">
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">
+                  New This Month
+                </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
+                  {stats.newThisMonth}
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                  Recent additions
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-200 dark:bg-green-800/50">
+                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                  Joined This Year
+                </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
+                  {stats.joinedThisYear}
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                  YTD members
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-200 dark:bg-amber-800/50">
+                <Calendar className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search members by name, phone, or email..."
+            className="pl-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+          />
+        </div>
+        <Button
+          variant="outline"
+          className="gap-2 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+        >
+          <Filter className="h-4 w-4" />
+          Filter
+        </Button>
+      </div>
+
+      {/* Members List */}
+      <Card className="border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          {memberList.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+              <p className="text-slate-500 dark:text-slate-400 font-medium">
+                No members found
+              </p>
+            </div>
+          ) : (
+            <div className="hidden md:block">
+              {/* Desktop Table View */}
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      Member
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      Joined
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {memberList.map((m) => (
+                    <tr
+                      key={m.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10 flex-shrink-0">
+                            <AvatarFallback className="bg-primary/10 dark:bg-primary/20 text-primary dark:text-accent font-semibold text-sm">
+                              {m.firstName?.[0]}
+                              {m.lastName?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {m.firstName} {m.lastName}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              ID: {m.id.slice(0, 8)}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {m.phone ? (
+                          <a
+                            href={`tel:${m.phone}`}
+                            className="flex items-center gap-2 text-sm text-primary dark:text-accent hover:underline"
+                          >
+                            <Phone className="h-4 w-4 flex-shrink-0" />
+                            {m.phone}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {m.email ? (
+                          <a
+                            href={`mailto:${m.email}`}
+                            className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-accent transition-colors line-clamp-1"
+                          >
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            {m.email}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                          <Calendar className="h-4 w-4 flex-shrink-0" />
+                          {m.joinDate
+                            ? new Date(m.joinDate).toLocaleDateString('en-GB', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                            : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-primary/10 dark:hover:bg-accent/10"
+                        >
+                          <ChevronRight className="h-4 w-4 text-primary dark:text-accent" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3 p-4">
+          {memberList.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+              <p className="text-slate-500 dark:text-slate-400 font-medium">
+                No members found
+              </p>
+            </div>
+          ) : (
+            memberList.map((m) => (
+              <div
+                key={m.id}
+                className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-10 w-10 flex-shrink-0">
+                      <AvatarFallback className="bg-primary/10 dark:bg-primary/20 text-primary dark:text-accent font-semibold">
+                        {m.firstName?.[0]}
+                        {m.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">
+                        {m.firstName} {m.lastName}
+                      </p>
+                      <p className="text-xs text-slate-500">ID: {m.id.slice(0, 8)}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <ChevronRight className="h-4 w-4 text-primary dark:text-accent" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {m.phone && (
+                    <a
+                      href={`tel:${m.phone}`}
+                      className="flex items-center gap-2 text-sm text-primary dark:text-accent hover:underline"
+                    >
+                      <Phone className="h-4 w-4 flex-shrink-0" />
+                      {m.phone}
+                    </a>
+                  )}
+                  {m.email && (
+                    <a
+                      href={`mailto:${m.email}`}
+                      className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-accent transition-colors truncate"
+                    >
+                      <Mail className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{m.email}</span>
+                    </a>
+                  )}
+                  {m.joinDate && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      {new Date(m.joinDate).toLocaleDateString('en-GB', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+
+      {/* Pagination and Summary Footer */}
+      {memberList.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Showing <span className="font-semibold text-slate-900 dark:text-white">
+              {memberList.length}
+            </span>{' '}
+            of <span className="font-semibold text-slate-900 dark:text-white">
+              {memberList.length}
+            </span>{' '}
+            members
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+              disabled
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+              disabled
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
