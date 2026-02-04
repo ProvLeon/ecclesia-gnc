@@ -88,7 +88,7 @@ export default async function ShepherdingPage() {
                 <div className="text-center py-12">
                   <Heart className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                   <p className="font-medium text-slate-900 dark:text-white">No scheduled follow-ups</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">All caught up! 🎉</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">All caught up!</p>
                 </div>
               ) : (
                 <div className="space-y-2 pt-4">
@@ -295,7 +295,7 @@ function StatCard({
 
   return (
     <Card className={`border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all group overflow-hidden border-l-4 ${leftBorderColor}`}>
-      <div className={`absolute inset-0 bg-gradient-to-r ${colors.accent} opacity-0 group-hover:opacity-100 transition-opacity`} />
+      <div className={`inset-0 bg-gradient-to-r ${colors.accent} opacity-0 group-hover:opacity-100 transition-opacity`} />
       <CardContent className="pt-6 relative">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
