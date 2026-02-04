@@ -9,7 +9,7 @@ import {
     parseMembershipRow,
     parseTitheRow,
 } from '@/lib/google-sheets'
-import { desc, ilike, or } from 'drizzle-orm'
+import { desc, ilike, or, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export async function getAvailableSheets() {
@@ -174,6 +174,131 @@ export async function syncTithesFromSheet(year: number = new Date().getFullYear(
 
         revalidatePath('/finance')
         return { success: true, imported, skipped, total: dataRows.length }
+    } catch (error) {
+        return { success: false, error: (error as Error).message, imported: 0 }
+    }
+}
+
+export async function syncAttendanceFromSheet() {
+    try {
+        const { services, attendance } = await import('@/lib/db/schema')
+        const rows = await getSheetData(SHEET_NAMES.ATTENDANCE)
+
+        if (rows.length < 2) {
+            return { success: false, error: 'No data found in sheet', imported: 0 }
+        }
+
+        const headers = rows[0] as string[]
+        const dataRows = rows.slice(1)
+
+        // Group by date to create services
+        const dateGroups = new Map<string, string[][]>()
+
+        for (const row of dataRows) {
+            const data: Record<string, string> = {}
+            headers.forEach((header, index) => {
+                data[header.toLowerCase().trim()] = (row as string[])[index] || ''
+            })
+
+            const date = data['date'] || data['service date'] || ''
+            if (!date) continue
+
+            if (!dateGroups.has(date)) {
+                dateGroups.set(date, [])
+            }
+            dateGroups.get(date)!.push(row as string[])
+        }
+
+        let servicesCreated = 0
+        let attendanceImported = 0
+        let skipped = 0
+
+        for (const [date, attendeeRows] of dateGroups) {
+            // Parse date - handle different formats
+            let serviceDate: string
+            try {
+                const parsed = new Date(date)
+                if (isNaN(parsed.getTime())) {
+                    skipped += attendeeRows.length
+                    continue
+                }
+                serviceDate = parsed.toISOString().split('T')[0]
+            } catch {
+                skipped += attendeeRows.length
+                continue
+            }
+
+            // Create or find service for this date
+            const existingService = await db
+                .select({ id: services.id })
+                .from(services)
+                .where(eq(services.serviceDate, serviceDate))
+                .limit(1)
+
+            let serviceId: string
+
+            if (existingService.length > 0) {
+                serviceId = existingService[0].id
+            } else {
+                const dayName = new Date(serviceDate).toLocaleDateString('en-US', { weekday: 'long' })
+                const [newService] = await db.insert(services).values({
+                    name: `${dayName} Service`,
+                    serviceType: dayName === 'Sunday' ? 'Sunday Service' : 'Midweek Service',
+                    serviceDate,
+                }).returning()
+                serviceId = newService.id
+                servicesCreated++
+            }
+
+            // Record attendance for each member
+            for (const row of attendeeRows) {
+                const data: Record<string, string> = {}
+                headers.forEach((header, index) => {
+                    data[header.toLowerCase().trim()] = row[index] || ''
+                })
+
+                const name = data['name'] || data['member name'] || data['member'] || ''
+                if (!name) {
+                    skipped++
+                    continue
+                }
+
+                // Find member by name
+                const nameParts = name.trim().split(/\s+/)
+                const firstName = nameParts[0] || ''
+
+                const memberResults = await db
+                    .select({ id: members.id })
+                    .from(members)
+                    .where(ilike(members.firstName, `%${firstName}%`))
+                    .limit(1)
+
+                if (memberResults.length === 0) {
+                    skipped++
+                    continue
+                }
+
+                try {
+                    await db.insert(attendance).values({
+                        serviceId,
+                        memberId: memberResults[0].id,
+                        checkInMethod: 'imported',
+                    }).onConflictDoNothing()
+                    attendanceImported++
+                } catch {
+                    skipped++
+                }
+            }
+        }
+
+        revalidatePath('/attendance')
+        return {
+            success: true,
+            imported: attendanceImported,
+            servicesCreated,
+            skipped,
+            total: dataRows.length
+        }
     } catch (error) {
         return { success: false, error: (error as Error).message, imported: 0 }
     }

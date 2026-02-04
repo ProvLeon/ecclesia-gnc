@@ -5,15 +5,15 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, RefreshCw, CheckCircle, AlertCircle, FileSpreadsheet, Users, Wallet } from 'lucide-react'
-import { syncMembersFromSheet, syncTithesFromSheet, getAvailableSheets } from '@/app/actions/sync'
+import { ArrowLeft, RefreshCw, CheckCircle, AlertCircle, FileSpreadsheet, Users, Wallet, CalendarCheck } from 'lucide-react'
+import { syncMembersFromSheet, syncTithesFromSheet, syncAttendanceFromSheet, getAvailableSheets } from '@/app/actions/sync'
 
 type SyncResult = { success: boolean; message: string; details?: string } | null
 
 export default function DataSettingsPage() {
     const [sheets, setSheets] = useState<{ title: string }[]>([])
     const [selectedSheet, setSelectedSheet] = useState('Membership')
-    const [isSyncing, setIsSyncing] = useState(false)
+    const [isSyncing, setIsSyncing] = useState<string | null>(null)
     const [result, setResult] = useState<SyncResult>(null)
 
     useEffect(() => {
@@ -25,7 +25,7 @@ export default function DataSettingsPage() {
     }, [])
 
     async function handleSyncMembers() {
-        setIsSyncing(true)
+        setIsSyncing('members')
         setResult(null)
         try {
             const res = await syncMembersFromSheet(selectedSheet)
@@ -37,12 +37,12 @@ export default function DataSettingsPage() {
         } catch (error) {
             setResult({ success: false, message: (error as Error).message })
         } finally {
-            setIsSyncing(false)
+            setIsSyncing(null)
         }
     }
 
     async function handleSyncTithes() {
-        setIsSyncing(true)
+        setIsSyncing('tithes')
         setResult(null)
         try {
             const res = await syncTithesFromSheet()
@@ -54,7 +54,24 @@ export default function DataSettingsPage() {
         } catch (error) {
             setResult({ success: false, message: (error as Error).message })
         } finally {
-            setIsSyncing(false)
+            setIsSyncing(null)
+        }
+    }
+
+    async function handleSyncAttendance() {
+        setIsSyncing('attendance')
+        setResult(null)
+        try {
+            const res = await syncAttendanceFromSheet()
+            setResult({
+                success: res.success,
+                message: res.success ? `Imported ${res.imported} attendance records` : res.error || 'Failed',
+                details: res.success && res.servicesCreated ? `Created ${res.servicesCreated} new services` : undefined,
+            })
+        } catch (error) {
+            setResult({ success: false, message: (error as Error).message })
+        } finally {
+            setIsSyncing(null)
         }
     }
 
@@ -107,8 +124,8 @@ export default function DataSettingsPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Button onClick={handleSyncMembers} disabled={isSyncing} className="bg-blue-600 hover:bg-blue-700">
-                            {isSyncing ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                        <Button onClick={handleSyncMembers} disabled={isSyncing !== null} className="bg-blue-600 hover:bg-blue-700">
+                            {isSyncing === 'members' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
                                 : <><RefreshCw className="h-4 w-4 mr-2" />Sync Members</>}
                         </Button>
                     </div>
@@ -129,14 +146,35 @@ export default function DataSettingsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Button onClick={handleSyncTithes} disabled={isSyncing} className="bg-green-600 hover:bg-green-700">
-                        {isSyncing ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                    <Button onClick={handleSyncTithes} disabled={isSyncing !== null} className="bg-green-600 hover:bg-green-700">
+                        {isSyncing === 'tithes' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
                             : <><RefreshCw className="h-4 w-4 mr-2" />Sync Tithes</>}
                     </Button>
                 </CardContent>
             </Card>
 
-            {/* Info */}
+            {/* Sync Attendance */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                            <CalendarCheck className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <CardTitle>Sync Attendance</CardTitle>
+                            <CardDescription>Import attendance records from Attendance sheet</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleSyncAttendance} disabled={isSyncing !== null} className="bg-amber-600 hover:bg-amber-700">
+                        {isSyncing === 'attendance' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                            : <><RefreshCw className="h-4 w-4 mr-2" />Sync Attendance</>}
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {/* Available Sheets */}
             <Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
                 <CardHeader>
                     <div className="flex items-center gap-2">
@@ -146,11 +184,15 @@ export default function DataSettingsPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-wrap gap-2">
-                        {sheets.map((s) => (
-                            <span key={s.title} className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-sm border">
-                                {s.title}
-                            </span>
-                        ))}
+                        {sheets.length === 0 ? (
+                            <p className="text-sm text-slate-500">Loading sheets...</p>
+                        ) : (
+                            sheets.map((s) => (
+                                <span key={s.title} className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-sm border">
+                                    {s.title}
+                                </span>
+                            ))
+                        )}
                     </div>
                 </CardContent>
             </Card>
