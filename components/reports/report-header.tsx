@@ -7,6 +7,8 @@ interface ReportHeaderProps {
   description: string
   onExport?: () => void
   exportLabel?: string
+  showBackButton?: boolean
+  backHref?: string
 }
 
 export function ReportHeader({
@@ -14,19 +16,24 @@ export function ReportHeader({
   description,
   onExport,
   exportLabel = 'Export PDF',
+  showBackButton = true,
+  backHref = '/reports',
 }: ReportHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
       <div className="flex items-center gap-4">
-        <Link href="/reports">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <ArrowLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-          </Button>
-        </Link>
+        {showBackButton && (
+          <Link href={backHref}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Go back to reports"
+            >
+              <ArrowLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            </Button>
+          </Link>
+        )}
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
             {title}

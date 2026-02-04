@@ -24,7 +24,7 @@ async function getDashboardStats() {
   }
 
   const [newMembers] = await db.select({ count: sql<number>`count(*)` }).from(members).where(gte(members.joinDate, startOfMonth))
-  const [pendingFollowups] = await db.select({ count: sql<number>`count(*)` }).from(followUps).where(eq(followUps.status, 'scheduled'))
+  const [pendingFollowups] = await db.select({ count: sql<number>`count(*)` }).from(followUps).where(eq(followUps.status, 'pending'))
 
   return {
     totalMembers: Number(totalMembers?.count || 0),

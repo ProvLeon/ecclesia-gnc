@@ -13,6 +13,7 @@ import {
   Building2,
   ArrowRight,
   Activity,
+  TrendingDown,
 } from 'lucide-react'
 import {
   getFinanceTrends,
@@ -374,6 +375,43 @@ export default async function AnalyticsPage() {
           </ul>
         </CardContent>
       </Card>
+
+      {/* Analytics Subpage Navigation */}
+      <div className="space-y-6">
+        <div className="pb-4 border-b border-slate-200 dark:border-slate-800">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <LineChart className="h-6 w-6 text-primary dark:text-accent" />
+            Deep Dive Analysis
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Explore detailed trends and historical performance data
+          </p>
+        </div>
+
+        <Link href="/reports/analytics/trends">
+          <Card className="border-slate-200 dark:border-slate-700 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                Historical Trends & Patterns
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Analyze 6-month trends across members, attendance, and finances. Compare growth patterns and identify seasonal variations.
+              </p>
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  View trends
+                  <ArrowRight className="h-3 w-3" />
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
 
       {/* Footer */}
       <ReportFooter

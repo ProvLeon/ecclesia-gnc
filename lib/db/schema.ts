@@ -57,16 +57,56 @@ export const paymentMethodEnum = pgEnum('payment_method', [
 ])
 
 export const followUpTypeEnum = pgEnum('follow_up_type', [
+  'new_member',
+  'absence',
+  'pastoral_care',
+  'prayer_request',
+  'discipleship',
   'phone_call',
   'visit',
   'prayer',
   'counseling',
+  'other',
 ])
 
 export const followUpStatusEnum = pgEnum('follow_up_status', [
-  'scheduled',
+  'pending',
+  'assigned',
+  'in_progress',
   'completed',
   'cancelled',
+])
+
+export const followUpOutcomeEnum = pgEnum('follow_up_outcome', [
+  'contacted',
+  'not_home',
+  'left_message',
+  'promised_action',
+  'resolved',
+  'escalated',
+  'no_contact',
+])
+
+export const followUpPriorityEnum = pgEnum('follow_up_priority', [
+  'low',
+  'medium',
+  'high',
+  'urgent',
+])
+
+export const reminderTypeEnum = pgEnum('reminder_type', [
+  'email',
+  'sms',
+  'in_app',
+])
+
+export const auditActionEnum = pgEnum('audit_action', [
+  'created',
+  'assigned',
+  'status_changed',
+  'completed',
+  'cancelled',
+  'notes_added',
 ])
 
 export const smsStatusEnum = pgEnum('sms_status', ['pending', 'sent', 'failed'])
@@ -295,24 +335,99 @@ export const shepherdAssignments = pgTable(
 )
 
 // ============================================================================
-// FOLLOW_UPS TABLE - Member follow-up records
+// FOLLOW_UPS TABLE - Member follow-up records with full audit trail
 // ============================================================================
 
 export const followUps = pgTable('follow_ups', {
   id: uuid('id').primaryKey().defaultRandom(),
-  shepherdId: uuid('shepherd_id').references(() => shepherds.id, {
-    onDelete: 'set null',
-  }),
   memberId: uuid('member_id')
     .notNull()
     .references(() => members.id, { onDelete: 'cascade' }),
-  followUpType: followUpTypeEnum('follow_up_type'),
-  scheduledDate: date('scheduled_date'),
+  shepherdId: uuid('shepherd_id').references(() => shepherds.id, {
+    onDelete: 'set null',
+  }),
+  createdBy: uuid('created_by')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict' }),
+  assignedBy: uuid('assigned_by').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+  completedBy: uuid('completed_by').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+  followUpType: followUpTypeEnum('follow_up_type').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  scheduledDate: date('scheduled_date').notNull(),
   completedDate: date('completed_date'),
-  status: followUpStatusEnum('status').notNull().default('scheduled'),
+  dueDate: date('due_date'),
+  priority: followUpPriorityEnum('priority').notNull().default('medium'),
+  status: followUpStatusEnum('status').notNull().default('pending'),
+  outcome: followUpOutcomeEnum('outcome'),
   notes: text('notes'),
+  outcomeNotes: text('outcome_notes'),
+  isTemplate: boolean('is_template').notNull().default(false),
+  templateId: uuid('template_id').references(() => followUpTemplates.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// ============================================================================
+// FOLLOW_UP_TEMPLATES TABLE - Reusable follow-up templates
+// ============================================================================
+
+export const followUpTemplates = pgTable('follow_up_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  departmentId: uuid('department_id').references(() => departments.id, {
+    onDelete: 'cascade',
+  }),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  followUpType: followUpTypeEnum('follow_up_type').notNull(),
+  suggestedQuestions: jsonb('suggested_questions').$type<string[]>(),
+  durationMinutes: integer('duration_minutes'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdBy: uuid('created_by')
+    .notNull()
+    .references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// ============================================================================
+// FOLLOW_UP_REMINDERS TABLE - Reminders for pending follow-ups
+// ============================================================================
+
+export const followUpReminders = pgTable('follow_up_reminders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  followUpId: uuid('follow_up_id')
+    .notNull()
+    .references(() => followUps.id, { onDelete: 'cascade' }),
+  reminderDate: date('reminder_date').notNull(),
+  reminderType: reminderTypeEnum('reminder_type').notNull(),
+  isSent: boolean('is_sent').notNull().default(false),
+  sentAt: timestamp('sent_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// ============================================================================
+// FOLLOW_UP_AUDIT_LOG TABLE - Audit trail for all follow-up changes
+// ============================================================================
+
+export const followUpAuditLog = pgTable('follow_up_audit_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  followUpId: uuid('follow_up_id')
+    .notNull()
+    .references(() => followUps.id, { onDelete: 'cascade' }),
+  action: auditActionEnum('action').notNull(),
+  changedBy: uuid('changed_by')
+    .notNull()
+    .references(() => users.id, { onDelete: 'set null' }),
+  oldValues: jsonb('old_values'),
+  newValues: jsonb('new_values'),
+  actionDate: timestamp('action_date').notNull().defaultNow(),
 })
 
 // ============================================================================
@@ -532,16 +647,76 @@ export const shepherdAssignmentsRelations = relations(
   })
 )
 
-export const followUpsRelations = relations(followUps, ({ one }) => ({
-  shepherd: one(shepherds, {
-    fields: [followUps.shepherdId],
-    references: [shepherds.id],
-  }),
+export const followUpsRelations = relations(followUps, ({ one, many }) => ({
   member: one(members, {
     fields: [followUps.memberId],
     references: [members.id],
   }),
+  shepherd: one(shepherds, {
+    fields: [followUps.shepherdId],
+    references: [shepherds.id],
+  }),
+  createdByUser: one(users, {
+    fields: [followUps.createdBy],
+    references: [users.id],
+    relationName: 'followUpCreator',
+  }),
+  assignedByUser: one(users, {
+    fields: [followUps.assignedBy],
+    references: [users.id],
+    relationName: 'followUpAssignedBy',
+  }),
+  completedByUser: one(users, {
+    fields: [followUps.completedBy],
+    references: [users.id],
+    relationName: 'followUpCompletedBy',
+  }),
+  template: one(followUpTemplates, {
+    fields: [followUps.templateId],
+    references: [followUpTemplates.id],
+  }),
+  reminders: many(followUpReminders),
+  auditLog: many(followUpAuditLog),
 }))
+
+export const followUpTemplatesRelations = relations(
+  followUpTemplates,
+  ({ one, many }) => ({
+    department: one(departments, {
+      fields: [followUpTemplates.departmentId],
+      references: [departments.id],
+    }),
+    createdByUser: one(users, {
+      fields: [followUpTemplates.createdBy],
+      references: [users.id],
+    }),
+    followUps: many(followUps),
+  })
+)
+
+export const followUpRemindersRelations = relations(
+  followUpReminders,
+  ({ one }) => ({
+    followUp: one(followUps, {
+      fields: [followUpReminders.followUpId],
+      references: [followUps.id],
+    }),
+  })
+)
+
+export const followUpAuditLogRelations = relations(
+  followUpAuditLog,
+  ({ one }) => ({
+    followUp: one(followUps, {
+      fields: [followUpAuditLog.followUpId],
+      references: [followUps.id],
+    }),
+    changedByUser: one(users, {
+      fields: [followUpAuditLog.changedBy],
+      references: [users.id],
+    }),
+  })
+)
 
 // ============================================================================
 // TYPE EXPORTS
@@ -576,6 +751,15 @@ export type NewShepherd = typeof shepherds.$inferInsert
 
 export type FollowUp = typeof followUps.$inferSelect
 export type NewFollowUp = typeof followUps.$inferInsert
+
+export type FollowUpTemplate = typeof followUpTemplates.$inferSelect
+export type NewFollowUpTemplate = typeof followUpTemplates.$inferInsert
+
+export type FollowUpReminder = typeof followUpReminders.$inferSelect
+export type NewFollowUpReminder = typeof followUpReminders.$inferInsert
+
+export type FollowUpAuditLog = typeof followUpAuditLog.$inferSelect
+export type NewFollowUpAuditLog = typeof followUpAuditLog.$inferInsert
 
 export type SmsMessage = typeof smsMessages.$inferSelect
 export type NewSmsMessage = typeof smsMessages.$inferInsert

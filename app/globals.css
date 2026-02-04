@@ -61,14 +61,14 @@
     --accent: oklch(0.85 0.21 106.8);
     --accent-foreground: oklch(0.13 0.04 264.8);
     /* Gold Secondary - lighter shade */
-    --secondary: oklch(0.92 0.12 104.5);
-    --secondary-foreground: oklch(0.13 0.04 264.8);
+    --secondary: oklch(0.13 0.04 264.8);
+    --secondary-foreground: oklch(0.93 0.013 255.5);
     --muted: oklch(0.92 0.006 264.8);
     --muted-foreground: oklch(0.55 0.046 257.417);
     --destructive: oklch(0.577 0.245 27.325);
     --border: oklch(0.93 0.013 255.5);
     --input: oklch(0.93 0.013 255.5);
-    --ring: oklch(0.85 0.21 106.8);
+    --ring: oklch(0.16 0.08 254.2);
     /* Chart colors - navy and gold based */
     --chart-1: oklch(0.16 0.08 254.2);
     --chart-2: oklch(0.85 0.21 106.8);
@@ -192,13 +192,18 @@
     /* ===== Touch Targets: Minimum 44x44px ===== */
     button,
     a,
-    input[type="checkbox"],
     input[type="radio"],
     [role="button"],
     [role="tab"],
     [role="menuitem"] {
         @apply min-h-[44px] min-w-[44px];
     }
+
+    input[type="checkbox"],
+    button[data-slot="checkbox"] {
+        @apply min-h-[6px] min-w-[6px];
+    }
+
 
     /* Form inputs minimum height */
     input[type="text"],

@@ -8,6 +8,13 @@
       "when": 1770168629127,
       "tag": "0000_add_sms_templates_and_events",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770207153376,
+      "tag": "0001_add_followup_feature",
+      "breakpoints": true
     }
   ]
 }

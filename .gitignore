@@ -39,5 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-*.md 
+*.md
 !README.md
+!GNC_AG*.md
+!FOLLOWUP_IMPLEMENTATION_CHECKLIST*
+!FOLLOWUP_FEATURE*

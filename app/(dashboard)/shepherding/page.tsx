@@ -13,7 +13,7 @@ export const revalidate = 0
 export default async function ShepherdingPage() {
   const [stats, { data: scheduledFollowUps }, { data: completedFollowUps }] = await Promise.all([
     getShepherdingStats(),
-    getFollowUps('scheduled', 1, 10),
+    getFollowUps('pending', 1, 10),
     getFollowUps('completed', 1, 5),
   ])
 
@@ -100,7 +100,7 @@ export default async function ShepherdingPage() {
                         className="flex items-center justify-between p-4 -mx-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/30 dark:to-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-semibold flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/30 dark:to-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-semibold shrink-0">
                             {f.memberName?.charAt(0) || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
