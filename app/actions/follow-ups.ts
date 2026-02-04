@@ -16,7 +16,6 @@ import {
   and,
   sql,
   ne,
-  lt,
   gte,
 } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
@@ -374,7 +373,7 @@ export async function getOverdueFollowUps(userId: string) {
       .innerJoin(members, eq(followUps.memberId, members.id))
       .where(
         and(
-          lt(followUps.dueDate, today as any),
+          sql`${followUps.dueDate} < ${today}`,
           ne(followUps.status, 'completed'),
           ne(followUps.status, 'cancelled')
         )
