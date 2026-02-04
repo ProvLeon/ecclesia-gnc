@@ -119,7 +119,7 @@ export function PromoteToShepherdModal({ memberId, memberName, trigger, onSucces
                     <AlertDialogAction
                         onClick={handlePromote}
                         disabled={loading}
-                        className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                        className="bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
                     >
                         {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                         Promote to Shepherd

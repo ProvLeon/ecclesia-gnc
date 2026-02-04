@@ -5,6 +5,7 @@ import { MessageSquare, Send, Check, X, Clock, History, ArrowRight, FileText } f
 import Link from 'next/link'
 import { getMessageStats, getMessages } from '@/app/actions/messages'
 import { format } from 'date-fns'
+import { ComposeMessageModal, BroadcastModal, NewTemplateModal } from '@/components/modals'
 
 export default async function MessagesPage() {
     const [stats, { data: recentMessages }] = await Promise.all([
@@ -26,11 +27,8 @@ export default async function MessagesPage() {
                             <FileText className="h-4 w-4 mr-2" />Templates
                         </Button>
                     </Link>
-                    <Link href="/messages/compose">
-                        <Button>
-                            <Send className="h-4 w-4 mr-2" />Compose Message
-                        </Button>
-                    </Link>
+                    <BroadcastModal />
+                    <ComposeMessageModal />
                 </div>
             </div>
 

@@ -6,23 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Plus, Search, Users, UserCheck, UserX, UserPlus } from 'lucide-react'
-import { MemberActions } from './components/member-actions'
+import { AddMemberButton } from './components/add-member-button'
+import { MemberTableClient } from './components/member-table-client'
 
 interface PageProps {
     searchParams: Promise<{
@@ -62,12 +54,7 @@ export default async function MembersPage({ searchParams }: PageProps) {
                         Manage church members and their information
                     </p>
                 </div>
-                <Link href="/members/new">
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Member
-                    </Button>
-                </Link>
+                <AddMemberButton />
             </div>
 
             {/* Stats Cards */}
@@ -133,93 +120,11 @@ export default async function MembersPage({ searchParams }: PageProps) {
             {/* Members Table */}
             <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-slate-200 dark:border-slate-700">
-                                <TableHead className="w-[300px]">Member</TableHead>
-                                <TableHead>Member ID</TableHead>
-                                <TableHead>Phone</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Join Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {members.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center">
-                                        <div className="text-slate-500 dark:text-slate-400">
-                                            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                            <p>No members found</p>
-                                            <p className="text-sm">
-                                                {search
-                                                    ? 'Try adjusting your search'
-                                                    : 'Add your first member to get started'}
-                                            </p>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                members.map((member) => (
-                                    <TableRow
-                                        key={member.id}
-                                        className="border-slate-200 dark:border-slate-700"
-                                    >
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-10 w-10">
-                                                    <AvatarImage src={member.photoUrl || ''} />
-                                                    <AvatarFallback className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                                        {member.firstName[0]}
-                                                        {member.lastName[0]}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <Link
-                                                        href={`/members/${member.id}`}
-                                                        className="font-medium text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
-                                                    >
-                                                        {member.firstName} {member.middleName ? `${member.middleName} ` : ''}{member.lastName}
-                                                    </Link>
-                                                    {member.email && (
-                                                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                            {member.email}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-mono text-sm text-slate-600 dark:text-slate-400">
-                                            {member.memberId}
-                                        </TableCell>
-                                        <TableCell className="text-slate-600 dark:text-slate-400">
-                                            {member.phonePrimary}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant="secondary"
-                                                className={statusColors[member.memberStatus as keyof typeof statusColors]}
-                                            >
-                                                {member.memberStatus?.replace('_', ' ')}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-slate-600 dark:text-slate-400">
-                                            {member.joinDate
-                                                ? new Date(member.joinDate).toLocaleDateString('en-GB', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    year: 'numeric',
-                                                })
-                                                : '-'}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <MemberActions memberId={member.id} memberName={`${member.firstName} ${member.lastName}`} />
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                    <MemberTableClient
+                        members={members}
+                        search={search}
+                        statusColors={statusColors}
+                    />
 
                     {/* Pagination */}
                     {pagination.totalPages > 1 && (

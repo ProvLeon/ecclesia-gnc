@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { departments, memberDepartments } from '@/lib/db/schema'
 import { eq, asc, sql } from 'drizzle-orm'
+import { NewDepartmentModal } from '@/components/modals'
 
 async function getDepartmentsWithMembers() {
     const depts = await db.select().from(departments).where(eq(departments.isActive, true)).orderBy(asc(departments.name))
@@ -33,11 +34,7 @@ export default async function DepartmentsPage() {
                     <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Departments</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Manage church departments and ministries</p>
                 </div>
-                <Link href="/departments/new">
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />Add Department
-                    </Button>
-                </Link>
+                <NewDepartmentModal />
             </div>
 
             {/* Stats */}

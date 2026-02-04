@@ -6,6 +6,7 @@ import { Wallet, TrendingUp, TrendingDown, Receipt, HandCoins, Landmark, ArrowRi
 import Link from 'next/link'
 import { getFinanceStats, getTithes, getOfferings, getExpenses } from '@/app/actions/finance'
 import { format } from 'date-fns'
+import { RecordTitheModal, RecordOfferingModal, RecordExpenseModal } from '@/components/modals'
 
 export default async function FinancePage() {
     const [stats, { data: recentTithes }, { data: recentOfferings }] = await Promise.all([
@@ -23,16 +24,9 @@ export default async function FinancePage() {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Track tithes, offerings, and expenses</p>
                 </div>
                 <div className="flex gap-2">
-                    <Link href="/finance/tithe/new">
-                        <Button>
-                            <HandCoins className="h-4 w-4 mr-2" />Record Tithe
-                        </Button>
-                    </Link>
-                    <Link href="/finance/offering/new">
-                        <Button variant="outline">
-                            <Landmark className="h-4 w-4 mr-2" />Record Offering
-                        </Button>
-                    </Link>
+                    <RecordTitheModal />
+                    <RecordOfferingModal />
+                    <RecordExpenseModal />
                 </div>
             </div>
 

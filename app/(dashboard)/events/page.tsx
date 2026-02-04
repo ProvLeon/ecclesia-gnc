@@ -11,6 +11,7 @@ import {
     CalendarCheck
 } from 'lucide-react'
 import { getEvents, getEventStats } from '@/app/actions/events'
+import { NewEventModal } from '@/components/modals'
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
     Conference: 'bg-purple-100 text-purple-700',
@@ -39,12 +40,7 @@ export default async function EventsPage() {
                         Church events and activities
                     </p>
                 </div>
-                <Link href="/events/new">
-                    <Button>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Create Event
-                    </Button>
-                </Link>
+                <NewEventModal />
             </div>
 
             {/* Stats */}
@@ -102,12 +98,12 @@ export default async function EventsPage() {
                             <p className="text-sm text-slate-500 mb-4">
                                 Create your first event to get started
                             </p>
-                            <Link href="/events/new">
+                            <NewEventModal trigger={
                                 <Button variant="outline">
                                     <PlusCircle className="h-4 w-4 mr-2" />
                                     Create Event
                                 </Button>
-                            </Link>
+                            } />
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-200 dark:divide-slate-700">

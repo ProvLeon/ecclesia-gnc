@@ -167,7 +167,7 @@ export default function ComposeMessagePage() {
                         <Button
                             onClick={handleSend}
                             disabled={isSending || selected.size === 0 || !message.trim() || isOverLimit}
-                            className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 shadow-lg shadow-violet-500/25"
+                            className="w-full bg-linear-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 shadow-lg shadow-violet-500/25"
                         >
                             {isSending
                                 ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</>
