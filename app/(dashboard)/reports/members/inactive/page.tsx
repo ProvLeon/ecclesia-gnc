@@ -86,7 +86,7 @@ export default async function InactiveMembersReportPage() {
           value={stats.recentlyInactive}
           description="Last 3 months"
           icon={AlertCircle}
-          variant="danger"
+          variant="warning"
         />
         <StatCard
           title="Long-term Inactive"
@@ -141,8 +141,8 @@ export default async function InactiveMembersReportPage() {
         <CardContent className="pt-6">
           <div className="space-y-4">
             {members && members.length > 0 ? (
-              members.map((member: any) => {
-                const daysSince = daysInactive(member.joinDate)
+              members.map((member: unknown) => {
+                const daysSince = daysInactive(member.joinDate as string)
                 const monthsSince = Math.floor(daysSince / 30)
                 let statusVariant = 'default'
                 let statusLabel = ''
@@ -160,7 +160,7 @@ export default async function InactiveMembersReportPage() {
 
                 return (
                   <div
-                    key={member.id}
+                    key={member.id as string}
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
@@ -169,7 +169,7 @@ export default async function InactiveMembersReportPage() {
                           {member.firstName} {member.lastName}
                         </h3>
                         <Badge
-                          variant={statusVariant as any}
+                          variant={statusVariant as unknown as u}
                           className={
                             statusVariant === 'warning'
                               ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'

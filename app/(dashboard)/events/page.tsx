@@ -143,7 +143,7 @@ export default async function EventsPage() {
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-700">
               {eventsData.data.map((event) => {
-                const colors = EVENT_TYPE_COLORS[event.eventType] || EVENT_TYPE_COLORS.Other
+                const colors = EVENT_TYPE_COLORS[event.eventType || 'Other'] || EVENT_TYPE_COLORS.Other
                 const eventDate = new Date(event.startDate)
                 const today = new Date()
                 const isUpcoming = eventDate > today

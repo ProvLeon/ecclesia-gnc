@@ -32,8 +32,8 @@ export default async function ShepherdingReportPage() {
     <div className="space-y-8">
       {/* Header */}
       <ReportHeader
-        title="Pastoral Care Report"
-        description="Follow-up activity, shepherding metrics, and care program insights"
+        title="Shepherd Follow-ups Report"
+        description="Pastoral care follow-up activity, shepherd metrics, and care program insights"
         exportLabel="Export PDF"
       />
 
@@ -355,9 +355,9 @@ export default async function ShepherdingReportPage() {
 
       {/* Footer */}
       <ReportFooter
-        reportType="Pastoral Care Summary"
+        reportType="Shepherd Follow-ups Summary"
         period={format(new Date(), 'MMMM yyyy')}
-        dataSource="Shepherding Records"
+        dataSource="Shepherd Follow-up Records"
       />
     </div>
   )

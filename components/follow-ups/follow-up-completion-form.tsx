@@ -101,7 +101,7 @@ export function FollowUpCompletionForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header */}
       <div className="border-b pb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Complete Follow-Up</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Complete Shepherd Follow-up</h3>
         <div className="mt-2 space-y-1">
           <p className="text-sm text-gray-600">
             <span className="font-medium">Title:</span> {followUpTitle}
@@ -124,7 +124,7 @@ export function FollowUpCompletionForm({
       {success && (
         <div className="flex gap-3 rounded-lg bg-green-50 p-4 border border-green-200">
           <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800">Follow-up completed successfully!</p>
+          <p className="text-sm text-green-800">Shepherd follow-up completed successfully!</p>
         </div>
       )}
 
@@ -170,7 +170,7 @@ export function FollowUpCompletionForm({
         </Label>
         <Textarea
           id="notes"
-          placeholder="Any follow-up actions needed or notes for other shepherds"
+          placeholder="Follow-up actions or notes for other shepherds on the team"
           value={formData.notes}
           onChange={(e) => handleInputChange('notes', e.target.value)}
           disabled={isLoading}
@@ -188,7 +188,7 @@ export function FollowUpCompletionForm({
               Completing...
             </>
           ) : (
-            'Complete Follow-Up'
+            'Complete Shepherd Follow-up'
           )}
         </Button>
 

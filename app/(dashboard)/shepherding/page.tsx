@@ -22,8 +22,8 @@ export default async function ShepherdingPage() {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Shepherding</h1>
-          <p className="text-slate-600 dark:text-slate-300 mt-2">Pastoral care and member follow-ups</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Shepherd Follow-ups</h1>
+          <p className="text-slate-600 dark:text-slate-300 mt-2">Manage pastoral care assignments and member follow-ups</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Link href="/shepherding/assignments">
@@ -78,7 +78,7 @@ export default async function ShepherdingPage() {
                   </div>
                   <div>
                     <CardTitle className="text-lg font-semibold">Scheduled Follow-ups</CardTitle>
-                    <CardDescription className="text-xs mt-1">Members awaiting pastoral contact</CardDescription>
+                    <CardDescription className="text-xs mt-1">Shepherd assignments awaiting pastoral contact</CardDescription>
                   </div>
                 </div>
               </div>

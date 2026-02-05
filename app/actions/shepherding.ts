@@ -1,9 +1,14 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { followUps, members, shepherds, shepherdAssignments } from '@/lib/db/schema'
+import { followUps, members, shepherds, shepherdAssignments, users } from '@/lib/db/schema'
 import { eq, desc, sql, and } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { getUser } from '@/app/actions/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+// Default password for new accounts (must be changed on first login)
+const DEFAULT_PASSWORD = 'password123'
 
 
 export async function getShepherdingStats() {
@@ -74,8 +79,13 @@ export async function createFollowUp(data: {
   title?: string
 }) {
   try {
-    // Use a default system user ID if not provided
-    const createdBy = data.createdBy || '00000000-0000-0000-0000-000000000000'
+    // Get the authenticated user from session
+    const user = await getUser()
+    if (!user) {
+      return { success: false, error: 'Unauthorized - user not authenticated' }
+    }
+
+    const createdBy = data.createdBy || user.id
 
     await db.insert(followUps).values({
       memberId: data.memberId,
@@ -166,32 +176,139 @@ export async function unassignMember(assignmentId: string) {
   return { success: true }
 }
 
-// Promote member to shepherd
+// Promote member to shepherd (STEP 1: Update role only, auth creation is separate)
 export async function promoteToShepherd(memberId: string) {
-  // Check if already a shepherd
-  const [existing] = await db
-    .select({ id: shepherds.id })
-    .from(shepherds)
-    .where(and(
-      eq(shepherds.memberId, memberId),
-      eq(shepherds.isActive, true)
-    ))
-    .limit(1)
+  try {
+    // Check if already a shepherd
+    const [existing] = await db
+      .select({ id: shepherds.id })
+      .from(shepherds)
+      .where(and(
+        eq(shepherds.memberId, memberId),
+        eq(shepherds.isActive, true)
+      ))
+      .limit(1)
 
-  if (existing) {
-    return { success: false, error: 'Already a shepherd' }
+    if (existing) {
+      return { success: false, error: 'Already a shepherd' }
+    }
+
+    const [shepherd] = await db.insert(shepherds).values({
+      memberId,
+      assignedDate: new Date().toISOString().split('T')[0],
+      isActive: true,
+    }).returning()
+
+    // Update user role if they have a user account
+    const [member] = await db
+      .select({ userId: members.userId })
+      .from(members)
+      .where(eq(members.id, memberId))
+      .limit(1)
+
+    if (member?.userId) {
+      await db.update(users)
+        .set({ role: 'shepherd', updatedAt: new Date() })
+        .where(eq(users.id, member.userId))
+    }
+
+    revalidatePath('/shepherding')
+    revalidatePath('/shepherding/assignments')
+    revalidatePath('/members')
+    return { success: true, shepherdId: shepherd.id }
+  } catch (error) {
+    console.error('Error promoting member to shepherd:', error)
+    return { success: false, error: 'Failed to promote member' }
   }
+}
 
-  const [shepherd] = await db.insert(shepherds).values({
-    memberId,
-    assignedDate: new Date().toISOString().split('T')[0],
-    isActive: true,
-  }).returning()
+// STEP 2: Create auth account for promoted member (separate from role promotion)
+// This is an explicit action that requires admin authorization
+// Use after promoteToShepherd() is called
+export async function createAuthAccountForMember(memberId: string) {
+  try {
+    // Get member details
+    const [member] = await db
+      .select({
+        userId: members.userId,
+        email: members.email,
+        firstName: members.firstName!,
+        lastName: members.lastName!
+      })
+      .from(members)
+      .where(eq(members.id, memberId))
+      .limit(1)
 
-  revalidatePath('/shepherding')
-  revalidatePath('/shepherding/assignments')
-  revalidatePath('/members')
-  return { success: true, shepherdId: shepherd.id }
+    if (!member || !member.email) {
+      return { success: false, error: 'Member not found or has no email' }
+    }
+
+    // Check if already has auth account
+    const [existingUser] = await db
+      .select({ id: users.id, role: users.role })
+      .from(users)
+      .where(eq(users.email, member.email))
+      .limit(1)
+
+    if (existingUser) {
+      return {
+        success: false,
+        error: `User already has an auth account (current role: ${existingUser.role})`
+      }
+    }
+
+    // Get their current role (should be 'shepherd' if recently promoted)
+    const memberRole = 'shepherd' // Users promoted via promoteToShepherd should have this role
+
+    // Create auth account with default password via Supabase
+    const supabase = createAdminClient()
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: member.email,
+      password: DEFAULT_PASSWORD,
+      email_confirm: true,
+      user_metadata: {
+        name: `${member.firstName} ${member.lastName}`,
+        memberId: memberId,
+        mustChangePassword: true,
+      },
+    })
+
+    if (error) {
+      console.error('Supabase user creation error:', error)
+      return { success: false, error: `Failed to create auth account: ${error.message}` }
+    }
+
+    if (!data.user) {
+      return { success: false, error: 'Failed to create auth account' }
+    }
+
+    // Sync the auth user to database with shepherd role
+    await db.insert(users).values({
+      id: data.user.id,
+      email: member.email,
+      role: memberRole,
+    }).onConflictDoUpdate({
+      target: users.id,
+      set: { role: memberRole, updatedAt: new Date() }
+    })
+
+    return {
+      success: true,
+      message: `Auth account created for ${member.email}. Default password: ${DEFAULT_PASSWORD}. User MUST change password on first login.`,
+      userId: data.user.id,
+      email: member.email,
+      role: memberRole,
+      temporaryPassword: DEFAULT_PASSWORD,
+    }
+  } catch (error) {
+    console.error('Error creating auth account:', error)
+    return { success: false, error: 'Failed to create auth account' }
+  }
+}
+
+// Legacy function name for backward compatibility
+export async function inviteShepherdToAuth(memberId: string) {
+  return createAuthAccountForMember(memberId)
 }
 
 export async function getActiveShepherds() {
@@ -206,5 +323,5 @@ export async function getActiveShepherds() {
     .from(shepherds)
     .innerJoin(members, eq(shepherds.memberId, members.id))
     .where(eq(shepherds.isActive, true))
-    .orderBy(members.firstName)
+    .orderBy(desc(shepherds.assignedDate))
 }

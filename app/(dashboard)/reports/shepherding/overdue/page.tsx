@@ -86,8 +86,8 @@ export default async function ShepherdingOverduePage() {
           Back to Shepherding
         </Link>
         <ReportHeader
-          title="Overdue Follow-ups"
-          description="Follow-up tasks that need immediate attention"
+          title="Overdue Shepherd Follow-ups"
+          description="Pastoral care follow-ups that need immediate shepherd attention"
           exportLabel="Export Overdue"
         />
       </div>

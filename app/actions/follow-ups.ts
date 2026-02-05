@@ -19,6 +19,7 @@ import {
   gte,
 } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { getUser } from '@/app/actions/auth'
 
 // ============================================================================
 // TYPES
@@ -34,7 +35,6 @@ export interface CreateFollowUpInput {
   priority?: 'low' | 'medium' | 'high' | 'urgent'
   templateId?: string
   notes?: string
-  userId?: string
 }
 
 export interface CompleteFollowUpInput {
@@ -113,18 +113,21 @@ async function logFollowUpAudit(
 
 export async function createFollowUp(data: CreateFollowUpInput) {
   try {
-    const user = data.userId
-    if (!user) {
+    // Get authenticated user from session
+    const authUser = await getUser()
+    if (!authUser || !authUser.id) {
       return {
         success: false,
-        error: 'Unauthorized - user not found',
+        error: 'Unauthorized - user not authenticated',
       }
     }
+
+    const userId = authUser.id
 
     const [userData] = await db
       .select({ role: users.role })
       .from(users)
-      .where(eq(users.id, user))
+      .where(eq(users.id, userId))
       .limit(1)
 
     if (!userData) {
@@ -138,7 +141,7 @@ export async function createFollowUp(data: CreateFollowUpInput) {
       userData.role === 'super_admin' ||
       userData.role === 'pastor' ||
       userData.role === 'admin' ||
-      (userData.role === 'shepherd' && (await isShepherdOfMember(user, data.memberId)))
+      (userData.role === 'shepherd' && (await isShepherdOfMember(userId, data.memberId)))
 
     if (!canCreate) {
       return {
@@ -158,7 +161,7 @@ export async function createFollowUp(data: CreateFollowUpInput) {
         dueDate: data.dueDate || null,
         priority: (data.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
         status: 'pending',
-        createdBy: user,
+        createdBy: userId,
         assignedBy: null,
         templateId: data.templateId || null,
         notes: data.notes || null,
@@ -482,11 +485,15 @@ export async function getShepherdCompletionRate(shepherdId: string) {
 // FOLLOW-UP TEMPLATES
 // ============================================================================
 
-export async function createFollowUpTemplate(data: CreateFollowUpTemplateInput, userId: string) {
+export async function createFollowUpTemplate(data: CreateFollowUpTemplateInput) {
   try {
-    if (!userId) {
-      return { success: false, error: 'Unauthorized' }
+    // Get authenticated user from session
+    const authUser = await getUser()
+    if (!authUser || !authUser.id) {
+      return { success: false, error: 'Unauthorized - user not authenticated' }
     }
+
+    const userId = authUser.id
 
     const [userData] = await db
       .select({ role: users.role })

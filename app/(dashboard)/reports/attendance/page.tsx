@@ -397,6 +397,3 @@ export default async function AttendanceReportPage() {
     </div>
   )
 }
-```
-
-Now let me update the Shepherding report page:

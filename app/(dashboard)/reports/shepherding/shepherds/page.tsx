@@ -1,19 +1,16 @@
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import {
   Users,
   Heart,
   TrendingUp,
   ArrowLeft,
-  ChevronRight,
-  Mail,
-  Phone,
 } from 'lucide-react'
 import { db } from '@/lib/db'
 import { shepherds, members, shepherdAssignments } from '@/lib/db/schema'
 import { sql, eq } from 'drizzle-orm'
 import { StatCard, ReportHeader, ReportFooter } from '@/components/reports'
+import { ShepherdCardWithModal } from '@/components/shepherds/shepherd-card-with-modal'
 
 async function getShepherdingData() {
   // Get all active shepherds
@@ -31,27 +28,56 @@ async function getShepherdingData() {
     .innerJoin(members, eq(shepherds.memberId, members.id))
     .where(eq(shepherds.isActive, true))
 
-  // Get assignment counts for each shepherd
-  const shepherdsWithCounts = await Promise.all(
+  // Get all assignments for each shepherd
+  const shepherdsWithAssignments = await Promise.all(
     activeShepherds.map(async (shepherd) => {
-      const [assignmentCount] = await db
-        .select({ count: sql<number>`count(*)` })
+      const rawAssignments = await db
+        .select({
+          id: shepherdAssignments.id,
+          memberId: shepherdAssignments.memberId,
+          memberName: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
+          memberEmail: members.email,
+          memberPhone: members.phonePrimary,
+          assignedDate: shepherdAssignments.assignedDate,
+          status: sql<string>`'assigned'`,
+        })
         .from(shepherdAssignments)
+        .innerJoin(members, eq(shepherdAssignments.memberId, members.id))
         .where(sql`${shepherdAssignments.shepherdId} = ${shepherd.id} AND ${shepherdAssignments.isActive} = true`)
+
+      // Map null values to undefined for type safety
+      const assignments = rawAssignments.map(a => ({
+        id: a.id,
+        memberId: a.memberId,
+        memberName: a.memberName,
+        memberEmail: a.memberEmail ?? undefined,
+        memberPhone: a.memberPhone ?? undefined,
+        assignedDate: a.assignedDate,
+        status: a.status,
+      })) as Array<{
+        id: string
+        memberId: string
+        memberName: string
+        memberEmail?: string
+        memberPhone?: string
+        assignedDate: string
+        status: string
+      }>
 
       return {
         ...shepherd,
-        assignmentCount: Number(assignmentCount?.count || 0),
+        assignmentCount: assignments.length,
+        assignments,
       }
     })
   )
 
-  const totalShepherds = shepherdsWithCounts.length
-  const totalAssignments = shepherdsWithCounts.reduce((sum, s) => sum + s.assignmentCount, 0)
+  const totalShepherds = shepherdsWithAssignments.length
+  const totalAssignments = shepherdsWithAssignments.reduce((sum, s) => sum + s.assignmentCount, 0)
   const avgAssignmentsPerShepherd = totalShepherds > 0 ? Math.round(totalAssignments / totalShepherds) : 0
 
   return {
-    shepherds: shepherdsWithCounts.sort((a, b) => b.assignmentCount - a.assignmentCount),
+    shepherds: shepherdsWithAssignments.sort((a, b) => b.assignmentCount - a.assignmentCount),
     totalShepherds,
     totalAssignments,
     avgAssignmentsPerShepherd,
@@ -133,53 +159,17 @@ export default async function ShepherdingShepherdsPage() {
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {shepherdsList.map((shepherd) => (
-                <div
+                <ShepherdCardWithModal
                   key={shepherd.id}
-                  className="py-4 px-6 -mx-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 dark:text-white truncate">
-                        {shepherd.firstName} {shepherd.lastName}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
-                        {shepherd.phonePrimary && (
-                          <a href={`tel:${shepherd.phonePrimary}`} className="hover:text-primary dark:hover:text-accent flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {shepherd.phonePrimary}
-                          </a>
-                        )}
-                        {shepherd.email && (
-                          <a href={`mailto:${shepherd.email}`} className="hover:text-primary dark:hover:text-accent flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {shepherd.email}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-slate-900 dark:text-white">{shepherd.assignmentCount}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">members</p>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Since {new Date(shepherd.assignedDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
-                        </p>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <ChevronRight className="h-4 w-4 text-primary dark:text-accent" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  id={shepherd.id}
+                  firstName={shepherd.firstName}
+                  lastName={shepherd.lastName}
+                  email={shepherd.email || undefined}
+                  phonePrimary={shepherd.phonePrimary}
+                  assignedDate={shepherd.assignedDate}
+                  assignmentCount={shepherd.assignmentCount}
+                  assignments={shepherd.assignments}
+                />
               ))}
             </div>
           )}

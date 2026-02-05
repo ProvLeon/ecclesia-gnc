@@ -119,8 +119,8 @@ const reportCategories = [
     ],
   },
   {
-    title: 'Pastoral Care',
-    description: 'Follow-up activities and shepherding metrics',
+    title: 'Shepherd Follow-ups',
+    description: 'Pastoral care activities and shepherd metrics',
     icon: Heart,
     color: 'from-rose-500 to-orange-500',
     lightColor: 'bg-rose-50 dark:bg-rose-950/30',
@@ -128,19 +128,19 @@ const reportCategories = [
       {
         label: 'Follow-up Summary',
         href: '/reports/shepherding',
-        desc: 'Pastoral visit activity and metrics',
+        desc: 'Shepherd follow-up activity and pastoral care metrics',
         icon: Heart,
       },
       {
-        label: 'Overdue Visits',
+        label: 'Overdue Follow-ups',
         href: '/reports/shepherding/overdue',
-        desc: 'Visits needing urgent attention',
+        desc: 'Shepherd follow-ups needing urgent attention',
         icon: AlertCircle,
       },
       {
         label: 'Shepherd Activity',
         href: '/reports/shepherding/shepherds',
-        desc: 'Team performance and assignments',
+        desc: 'Shepherd performance and follow-up assignments',
         icon: Users,
       },
     ],
@@ -167,10 +167,10 @@ const quickAccessReports = [
     description: 'All members',
   },
   {
-    label: 'Pastoral Activity',
+    label: 'Shepherd Follow-ups',
     href: '/reports/shepherding',
     icon: Heart,
-    description: 'Follow-ups & visits',
+    description: 'Pastoral care & shepherd visits',
   },
 ]
 

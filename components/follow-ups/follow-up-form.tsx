@@ -130,9 +130,9 @@ export function FollowUpForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header */}
       <div className="border-b pb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Create Follow-Up</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Create Shepherd Follow-up</h3>
         <p className="text-sm text-gray-600 mt-1">
-          For: <span className="font-medium">{memberName}</span>
+          Pastoral care for: <span className="font-medium">{memberName}</span>
         </p>
       </div>
 
@@ -148,7 +148,7 @@ export function FollowUpForm({
       {success && (
         <div className="flex gap-3 rounded-lg bg-green-50 p-4 border border-green-200">
           <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800">Follow-up created successfully!</p>
+          <p className="text-sm text-green-800">Shepherd follow-up created successfully!</p>
         </div>
       )}
 
@@ -251,11 +251,11 @@ export function FollowUpForm({
       {/* Notes */}
       <div className="space-y-2">
         <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
-          Internal Notes
+          Shepherd Notes
         </Label>
         <Textarea
           id="notes"
-          placeholder="Notes for yourself or other shepherds"
+          placeholder="Notes for the assigned shepherd and team"
           value={formData.notes}
           onChange={(e) => handleInputChange('notes', e.target.value)}
           disabled={isLoading}
@@ -276,7 +276,7 @@ export function FollowUpForm({
               Creating...
             </>
           ) : (
-            'Create Follow-Up'
+            'Create Shepherd Follow-up'
           )}
         </Button>
 

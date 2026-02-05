@@ -117,7 +117,7 @@ export default async function DashboardPage() {
             <QuickAction icon={Wallet} label="Record Tithe" href="/finance/tithe/new" />
             <QuickAction icon={CalendarCheck} label="New Service" href="/attendance/new" />
             <QuickAction icon={MessageSquare} label="Send SMS" href="/messages/compose" />
-            <QuickAction icon={Heart} label="Schedule Visit" href="/shepherding/new" />
+            <QuickAction icon={Heart} label="Schedule Follow-up" href="/shepherding/new" />
             <QuickAction icon={Building2} label="Departments" href="/departments" />
           </CardContent>
         </Card>
@@ -176,9 +176,9 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="font-semibold text-slate-900 dark:text-white">
-                  {stats.pendingFollowups} Scheduled Follow-up{stats.pendingFollowups !== 1 ? 's' : ''}
+                  {stats.pendingFollowups} Pending Shepherd Follow-up{stats.pendingFollowups !== 1 ? 's' : ''}
                 </p>
-                <p className="text-sm text-slate-600 dark:text-slate-300">Members awaiting pastoral care</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Pastoral care assignments awaiting shepherd action</p>
               </div>
             </div>
             <Link href="/shepherding" className="w-full sm:w-auto">

@@ -25,12 +25,12 @@ import { PlusCircle, Loader2, Heart, Search, User } from 'lucide-react'
 import { createFollowUp, getMembersForFollowUp } from '@/app/actions/shepherding'
 
 const FOLLOW_UP_TYPES = [
-  { value: 'visit', label: '🏠 Home Visit' },
-  { value: 'phone_call', label: '📞 Phone Call' },
-  { value: 'counseling', label: '💬 Counseling' },
-  { value: 'pastoral_care', label: '🏥 Pastoral Care' },
-  { value: 'prayer', label: '🙏 Prayer Meeting' },
-  { value: 'discipleship', label: '📖 Discipleship' },
+  { value: 'visit', label: 'Home Visit' },
+  { value: 'phone_call', label: 'Phone Call' },
+  { value: 'counseling', label: 'Counseling' },
+  { value: 'pastoral_care', label: 'Pastoral Care' },
+  { value: 'prayer', label: 'Prayer Meeting' },
+  { value: 'discipleship', label: 'Discipleship' },
 ]
 
 interface NewFollowUpModalProps {
@@ -101,10 +101,10 @@ export function NewFollowUpModal({ trigger, onSuccess }: NewFollowUpModalProps) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-rose-500" />
-            Schedule Follow-up
+            Schedule Shepherd Follow-up
           </DialogTitle>
           <DialogDescription>
-            Plan pastoral care for a member
+            Assign pastoral care follow-up for a member
           </DialogDescription>
         </DialogHeader>
 
