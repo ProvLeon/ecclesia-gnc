@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ToastContainer } from "@/components/Toast/ToastContainer";
+import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SkipLink } from "@/components/SkipLink";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
           <NotificationProvider>
             {children}
             <ToastContainer />
+            <Toaster />
           </NotificationProvider>
         </ErrorBoundary>
       </body>

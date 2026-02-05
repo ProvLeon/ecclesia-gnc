@@ -25,7 +25,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { getMember } from '@/app/actions/members'
-import { PromoteToShepherdModal } from '@/components/modals'
+import { PromoteToShepherdModal } from '@/components/modals/promote-shepherd-modal'
 
 interface MemberDetailsSheetProps {
   memberId: string | null
