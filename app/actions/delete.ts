@@ -349,7 +349,7 @@ export async function deleteEvent(eventId: string) {
     await db.delete(events).where(eq(events.id, eventId))
 
     revalidatePath('/events')
-    return { success: true, message: `Event ${event.name} deleted` }
+    return { success: true, message: `Event ${event.title} deleted` }
   } catch (error) {
     console.error('Error deleting event:', error)
     return { success: false, error: 'Failed to delete event' }
