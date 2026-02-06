@@ -141,7 +141,7 @@ export default async function InactiveMembersReportPage() {
         <CardContent className="pt-6">
           <div className="space-y-4">
             {members && members.length > 0 ? (
-              members.map((member: unknown) => {
+              members.map((member: any) => {
                 const daysSince = daysInactive(member.joinDate as string)
                 const monthsSince = Math.floor(daysSince / 30)
                 let statusVariant = 'default'
