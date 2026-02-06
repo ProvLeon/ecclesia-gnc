@@ -169,7 +169,7 @@ export default async function InactiveMembersReportPage() {
                           {member.firstName} {member.lastName}
                         </h3>
                         <Badge
-                          variant={statusVariant as unknown as u}
+                          variant={statusVariant as any}
                           className={
                             statusVariant === 'warning'
                               ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
