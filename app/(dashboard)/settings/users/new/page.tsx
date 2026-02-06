@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ArrowLeft, Save, AlertCircle } from 'lucide-react'
+import { createUser } from '@/app/actions/users'
+
 
 const ROLES = [
-  { value: 'member', label: 'Member' },
   { value: 'shepherd', label: 'Shepherd' },
   { value: 'dept_leader', label: 'Department Leader' },
   { value: 'treasurer', label: 'Treasurer' },
@@ -39,7 +40,7 @@ export default function NewUserPage() {
     lastName: '',
     email: '',
     phone: '',
-    role: 'member',
+    role: 'shepherd',
     permissions: [] as string[],
     isActive: true,
   })
@@ -66,21 +67,24 @@ export default function NewUserPage() {
     }))
   }
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     try {
-      // Call API to create user
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      const result = await createUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        role: formData.role as any,
+        isActive: formData.isActive,
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to create user')
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create user')
       }
 
       setSuccess(true)

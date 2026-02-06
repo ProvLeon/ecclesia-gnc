@@ -212,7 +212,7 @@ export async function createMember(data: CreateMemberInput) {
   }
 }
 
-async function generateMemberId() {
+export async function generateMemberId() {
   const [lastMember] = await db
     .select({ memberId: members.memberId })
     .from(members)

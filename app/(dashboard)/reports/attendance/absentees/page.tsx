@@ -47,7 +47,7 @@ async function getAbsenteeReport() {
       memberId: members.memberId,
       firstName: members.firstName,
       lastName: members.lastName,
-      emailPrimary: members.emailPrimary,
+      emailPrimary: members.email,
       phonePrimary: members.phonePrimary,
     })
     .from(members)
@@ -194,8 +194,8 @@ export default async function AttendanceAbsenteesPage() {
 
                     <div
                       className={`px-2.5 py-1 rounded-full text-xs font-semibold ${member.absenceRate >= 75
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                          : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                        : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                         }`}
                     >
                       {Math.round(member.absenceRate)}%
@@ -339,10 +339,10 @@ export default async function AttendanceAbsenteesPage() {
 
                       <div
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 ${member.absenceRate >= 75
-                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                            : member.absenceRate >= 60
-                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                              : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                          : member.absenceRate >= 60
+                            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
                           }`}
                       >
                         {Math.round(member.absenceRate)}%

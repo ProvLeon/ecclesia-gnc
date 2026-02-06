@@ -43,10 +43,17 @@ export async function getUser(id: string) {
     return user
 }
 
+import { generateMemberId } from './members'
+
+import { createClient } from '@supabase/supabase-js'
+
 export async function createUser(data: {
     email: string
+    firstName: string
+    lastName: string
+    phone?: string
     role: 'super_admin' | 'pastor' | 'admin' | 'treasurer' | 'dept_leader' | 'shepherd' | 'member'
-    memberId?: string
+    isActive?: boolean
 }) {
     // Check if email already exists
     const [existing] = await db
@@ -59,24 +66,74 @@ export async function createUser(data: {
         return { success: false, error: 'Email already exists' }
     }
 
-    const [newUser] = await db
-        .insert(users)
-        .values({
-            email: data.email.toLowerCase(),
-            role: data.role,
+    try {
+        // 0. Initialize Supabase Admin
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+            console.error('Missing Supabase environment variables')
+            return { success: false, error: 'Server configuration error' }
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
         })
-        .returning()
 
-    // Link to member if provided
-    if (data.memberId) {
-        await db
-            .update(members)
-            .set({ userId: newUser.id })
-            .where(eq(members.id, data.memberId))
+        // 1. Create Auth User
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email: data.email.toLowerCase(),
+            password: 'password123',
+            email_confirm: true,
+            user_metadata: {
+                role: data.role,
+                first_name: data.firstName,
+                last_name: data.lastName
+            }
+        })
+
+        if (authError || !authData.user) {
+            console.error('Auth creation error:', authError)
+            return { success: false, error: authError?.message || 'Failed to create auth user' }
+        }
+
+        const userId = authData.user.id
+
+        // 2. Create DB User
+        // Note: We use the SAME ID as Supabase Auth
+        const [newUser] = await db
+            .insert(users)
+            .values({
+                id: userId,
+                email: data.email.toLowerCase(),
+                role: data.role,
+                isActive: data.isActive ?? true,
+            })
+            .returning()
+
+        // 3. Create Member Profile
+        const memberId = await generateMemberId()
+
+        await db.insert(members).values({
+            userId: newUser.id,
+            memberId: memberId,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email.toLowerCase(),
+            phonePrimary: data.phone || '',
+            memberStatus: 'active',
+            joinDate: new Date().toISOString(),
+        })
+
+        revalidatePath('/settings/users')
+        return { success: true, user: newUser }
+    } catch (error) {
+        console.error('Error creating user:', error)
+        return { success: false, error: 'Failed to create user' }
     }
-
-    revalidatePath('/settings/users')
-    return { success: true, user: newUser }
 }
 
 export async function updateUserRole(id: string, role: 'super_admin' | 'pastor' | 'admin' | 'treasurer' | 'dept_leader' | 'shepherd' | 'member') {
@@ -107,6 +164,48 @@ export async function toggleUserStatus(id: string) {
 
     revalidatePath('/settings/users')
     return { success: true, user: updated }
+}
+
+export async function deleteUser(id: string) {
+    // 0. Initialize Supabase Admin
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+        return { success: false, error: 'Server configuration error' }
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    })
+
+    try {
+        // 1. Delete from Supabase Auth
+        const { error: authError } = await supabase.auth.admin.deleteUser(id)
+
+        if (authError) {
+            // If user is not found in Auth, we can still proceed to delete from DB
+            // This handles cases where DB and Auth are out of sync
+            if (authError.message.includes('not found') || (authError as any).status === 404) {
+                console.warn('User not found in Supabase Auth, proceeding with DB deletion:', id)
+            } else {
+                console.error('Error deleting auth user:', authError)
+                return { success: false, error: authError.message }
+            }
+        }
+
+        // 2. Delete from Database (users table)
+        await db.delete(users).where(eq(users.id, id))
+
+        revalidatePath('/settings/users')
+        return { success: true }
+    } catch (error) {
+        console.error('Error deleting user:', error)
+        return { success: false, error: 'Failed to delete user' }
+    }
 }
 
 export async function getUserStats() {
