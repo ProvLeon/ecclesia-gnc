@@ -360,7 +360,10 @@ export default async function ShepherdAssignmentDetailPage({
         <div>
           <AssignMemberDialog
             shepherdId={shepherdId}
-            unassignedMembers={unassignedMembers}
+            unassignedMembers={unassignedMembers.map(m => ({
+              ...m,
+              email: m.email ?? undefined
+            }))}
           />
         </div>
       </div>
