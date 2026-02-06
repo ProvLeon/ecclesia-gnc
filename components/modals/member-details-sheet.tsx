@@ -23,37 +23,39 @@ import {
   MessageSquare,
   Heart,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react'
 import { getMember } from '@/app/actions/members'
 import { PromoteToShepherdModal } from '@/components/modals/promote-shepherd-modal'
+import { MemberProfileUploader } from '@/components/member-profile-uploader'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface MemberDetailsSheetProps {
   memberId: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onEdit?: (member: MemberData) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  inactive: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  visitor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  new_convert: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  inactive: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  visitor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  new_convert: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
 }
 
 type MemberData = Awaited<ReturnType<typeof getMember>>
 
-export function MemberDetailsSheet({ memberId, open, onOpenChange }: MemberDetailsSheetProps) {
+export function MemberDetailsSheet({ memberId, open, onOpenChange, onEdit }: MemberDetailsSheetProps) {
   const [member, setMember] = useState<MemberData | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // Reload member data when sheet opens or ID changes
   useEffect(() => {
     if (memberId && open) {
       let isMounted = true
-
       const loadMember = async () => {
-        if (isMounted) {
-          setLoading(true)
-        }
+        setLoading(true)
         try {
           const data = await getMember(memberId)
           if (isMounted) {
@@ -61,18 +63,11 @@ export function MemberDetailsSheet({ memberId, open, onOpenChange }: MemberDetai
             setLoading(false)
           }
         } catch (error) {
-          if (isMounted) {
-            setLoading(false)
-            console.error('Failed to load member:', error)
-          }
+          if (isMounted) setLoading(false)
         }
       }
-
       void loadMember()
-
-      return () => {
-        isMounted = false
-      }
+      return () => { isMounted = false }
     }
   }, [memberId, open])
 
@@ -80,190 +75,172 @@ export function MemberDetailsSheet({ memberId, open, onOpenChange }: MemberDetai
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString('en-GB', {
       day: 'numeric',
-      month: 'short',
+      month: 'long',
       year: 'numeric',
     })
   }
 
+  // Handle uploader completing - refresh local data
+  const handleUploadComplete = (url: string) => {
+    if (member) {
+      setMember({ ...member, photoUrl: url })
+    }
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0">
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 border-l border-slate-200 dark:border-slate-800">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <p className="text-sm text-slate-500">Loading profile...</p>
+            </div>
           </div>
         ) : member ? (
-          <>
-            <div className="px-6 py-6 border-b border-slate-100 dark:border-slate-800">
-              {/* Header */}
-              <SheetHeader className="text-left mb-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-20 w-20 ring-4 ring-slate-50 dark:ring-slate-900">
-                    <AvatarImage src={member.photoUrl || ''} />
-                    <AvatarFallback className="bg-linear-to-br from-blue-600 to-indigo-600 text-white text-2xl font-medium">
-                      {member.firstName[0]}{member.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 pt-1">
-                    <SheetTitle className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {member.firstName} {member.lastName}
-                    </SheetTitle>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <p className="text-sm font-mono text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                        {member.memberId}
-                      </p>
-                      <Badge
-                        variant="secondary"
-                        className={`${STATUS_COLORS[member.memberStatus || 'active']} border-0`}
-                      >
-                        {member.memberStatus?.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </SheetHeader>
+          <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950/50">
+            {/* Hero / Header Section */}
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center pt-8">
+              <MemberProfileUploader
+                memberId={member.id}
+                firstName={member.firstName}
+                lastName={member.lastName}
+                currentPhotoUrl={member.photoUrl}
+                size="xl"
+                onUploadComplete={handleUploadComplete}
+              />
 
-              {/* Quick Actions */}
-              <div className="flex gap-3">
-                <Link href={`/members/${memberId}/edit`} className="flex-1">
-                  <Button variant="outline" className="w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs border-slate-200 dark:border-slate-700">
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                </Link>
+              <div className="text-center mt-4">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {member.firstName} {member.lastName}
+                </h2>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <div className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 border border-slate-200 dark:border-slate-700">
+                    {member.memberId}
+                  </div>
+                  <Badge className={`${STATUS_COLORS[member.memberStatus || 'active']} border-0`}>
+                    {member.memberStatus?.replace('_', ' ')}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 w-full mt-6">
+                <Button
+                  onClick={() => onEdit?.(member)}
+                  variant="outline"
+                  className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-2 text-blue-600" />
+                  Edit Profile
+                </Button>
                 <PromoteToShepherdModal
-                  memberId={memberId!}
+                  memberId={member.id}
                   memberName={`${member.firstName} ${member.lastName}`}
                   trigger={
-                    <Button variant="outline" className="flex-1 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs border-slate-200 dark:border-slate-700">
-                      <Shield className="h-4 w-4 mr-2" />
+                    <Button variant="outline" className="w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm">
+                      <Shield className="h-3.5 w-3.5 mr-2 text-purple-600" />
                       Promote
                     </Button>
                   }
                 />
               </div>
-
-              <Separator />
             </div>
 
-            <div className="p-6 space-y-8">
+            {/* Content Scrollable Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
-              {/* Contact Info */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Contact Information
-                </h3>
-                <div className="space-y-2.5">
-                  {member.phonePrimary && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                        <Phone className="h-4 w-4 text-slate-500" />
-                      </div>
-                      <div>
-                        <p className="text-slate-900 dark:text-white">{member.phonePrimary}</p>
-                        <p className="text-xs text-slate-500">Primary</p>
-                      </div>
-                      <Link href={`tel:${member.phonePrimary}`} className="ml-auto">
-                        <Button size="sm" variant="ghost">
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
+              {/* Contact Card */}
+              <Card className="shadow-sm border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-slate-500" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Contact Details</span>
+                </div>
+                <CardContent className="p-4 space-y-4">
+                  <InfoRow
+                    icon={Phone}
+                    label="Phone"
+                    value={member.phonePrimary}
+                    subValue="Primary"
+                    action={member.phonePrimary ? <ActionLink href={`tel:${member.phonePrimary}`} icon={Phone} /> : null}
+                  />
                   {member.email && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                        <Mail className="h-4 w-4 text-slate-500" />
-                      </div>
-                      <div>
-                        <p className="text-slate-900 dark:text-white truncate max-w-48">{member.email}</p>
-                        <p className="text-xs text-slate-500">Email</p>
-                      </div>
-                      <Link href={`mailto:${member.email}`} className="ml-auto">
-                        <Button size="sm" variant="ghost">
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
+                    <InfoRow
+                      icon={Mail}
+                      label="Email"
+                      value={member.email}
+                      action={<ActionLink href={`mailto:${member.email}`} icon={MessageSquare} />}
+                    />
                   )}
                   {(member.address || member.city) && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                        <MapPin className="h-4 w-4 text-slate-500" />
-                      </div>
-                      <div>
-                        <p className="text-slate-900 dark:text-white">
-                          {[member.address, member.city, member.region].filter(Boolean).join(', ')}
-                        </p>
-                        <p className="text-xs text-slate-500">Address</p>
-                      </div>
-                    </div>
+                    <InfoRow
+                      icon={MapPin}
+                      label="Address"
+                      value={[member.address, member.city, member.region].filter(Boolean).join(', ')}
+                    />
                   )}
-                </div>
-              </div>
-
-              <Separator />
+                </CardContent>
+              </Card>
 
               {/* Personal Details */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Personal Details
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <InfoItem label="Date of Birth" value={formatDate(member.dateOfBirth)} />
-                  <InfoItem label="Gender" value={member.gender === 'male' ? 'Male' : member.gender === 'female' ? 'Female' : '-'} />
-                  <InfoItem label="Marital Status" value={member.maritalStatus ? member.maritalStatus.charAt(0).toUpperCase() + member.maritalStatus.slice(1) : '-'} />
-                  <InfoItem label="Occupation" value={member.occupation || '-'} />
+              <Card className="shadow-sm border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center gap-2">
+                  <User className="h-3.5 w-3.5 text-slate-500" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Personal Info</span>
                 </div>
-              </div>
-
-              <Separator />
+                <CardContent className="p-4 grid grid-cols-2 gap-4">
+                  <GridItem label="Gender" value={member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : '-'} />
+                  <GridItem label="Marital Status" value={member.maritalStatus ? member.maritalStatus.charAt(0).toUpperCase() + member.maritalStatus.slice(1) : '-'} />
+                  <GridItem label="Date of Birth" value={formatDate(member.dateOfBirth)} />
+                  <GridItem label="Occupation" value={member.occupation || '-'} />
+                </CardContent>
+              </Card>
 
               {/* Church Info */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Heart className="h-4 w-4" />
-                  Church Information
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <InfoItem label="Join Date" value={formatDate(member.joinDate)} />
-                  <InfoItem label="Baptized" value={member.isBaptized ? 'Yes' : 'No'} />
-                  {member.baptismDate && (
-                    <InfoItem label="Baptism Date" value={formatDate(member.baptismDate)} />
-                  )}
+              <Card className="shadow-sm border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center gap-2">
+                  <Heart className="h-3.5 w-3.5 text-slate-500" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Church Status</span>
                 </div>
-              </div>
+                <CardContent className="p-4 grid grid-cols-2 gap-4">
+                  <GridItem label="Joined" value={formatDate(member.joinDate)} />
+                  <GridItem label="Baptized" value={member.isBaptized ? 'Yes' : 'No'} />
+                  {member.baptismDate && <GridItem label="Baptism Date" value={formatDate(member.baptismDate)} />}
+                </CardContent>
+              </Card>
+
+              {/* Emergency Contact */}
+              {(member.emergencyContactName || member.emergencyContactPhone) && (
+                <Card className="shadow-sm border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center gap-2">
+                    <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Emergency Contact</span>
+                  </div>
+                  <CardContent className="p-4 space-y-3">
+                    <InfoRow icon={User} label="Name" value={member.emergencyContactName} />
+                    <InfoRow
+                      icon={Phone}
+                      label="Phone"
+                      value={member.emergencyContactPhone}
+                      action={member.emergencyContactPhone ? <ActionLink href={`tel:${member.emergencyContactPhone}`} icon={Phone} /> : null}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Notes */}
               {member.notes && (
-                <>
-                  <Separator />
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Notes</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
-                      {member.notes}
-                    </p>
-                  </div>
-                </>
+                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-500 mb-2">Notes</h4>
+                  <p className="text-sm text-amber-800 dark:text-amber-200/80 whitespace-pre-wrap">{member.notes}</p>
+                </div>
               )}
 
-
-              {/* View Full Profile Link - Optional/Contextual */}
-              <div className="pt-2">
-                <Link href={`/members/${memberId}`}>
-                  <Button variant="ghost" className="w-full text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                    View Full Profile Details
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </Link>
-              </div>
+              <div className="h-4"></div>
             </div>
-          </>
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-slate-500">
-            <User className="h-12 w-12 mb-2" />
+          <div className="flex flex-col items-center justify-center h-full text-slate-500">
+            <User className="h-12 w-12 mb-2 opacity-20" />
             <p>Member not found</p>
           </div>
         )}
@@ -272,11 +249,47 @@ export function MemberDetailsSheet({ memberId, open, onOpenChange }: MemberDetai
   )
 }
 
+function InfoRow({ icon: Icon, label, value, subValue, action }: any) {
+  if (!value) return null
+  return (
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5">
+        <Icon className="h-4 w-4 text-slate-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{value}</p>
+        {subValue && <p className="text-xs text-slate-500">{subValue}</p>}
+        {!subValue && <p className="text-xs text-slate-500">{label}</p>}
+      </div>
+      {action}
+    </div>
+  )
+}
+
+function GridItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500 mb-0.5">{label}</p>
+      <p className="text-sm font-medium text-slate-900 dark:text-white">{value}</p>
+    </div>
+  )
+}
+
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-slate-500 mb-0.5">{label}</p>
       <p className="text-sm font-medium text-slate-900 dark:text-white">{value}</p>
     </div>
+  )
+}
+
+function ActionLink({ href, icon: Icon }: { href: string; icon: any }) {
+  return (
+    <Link href={href}>
+      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-slate-500 hover:text-primary hover:bg-primary/10">
+        <Icon className="h-4 w-4" />
+      </Button>
+    </Link>
   )
 }

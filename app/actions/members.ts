@@ -132,75 +132,7 @@ export async function getMember(id: string) {
   return member
 }
 
-export async function createMember(data: {
-  firstName: string
-  middleName?: string
-  lastName: string
-  phonePrimary: string
-  phoneSecondary?: string
-  email?: string
-  dateOfBirth?: string
-  gender?: 'male' | 'female'
-  maritalStatus?: 'single' | 'married' | 'divorced' | 'widowed'
-  address?: string
-  city?: string
-  region?: string
-  occupation?: string
-  memberStatus?: 'active' | 'inactive' | 'visitor' | 'new_convert'
-  joinDate: string
-  baptismDate?: string
-  isBaptized?: boolean
-  emergencyContactName?: string
-  emergencyContactPhone?: string
-  notes?: string
-}) {
-  // Generate member ID
-  const [lastMember] = await db
-    .select({ memberId: members.memberId })
-    .from(members)
-    .orderBy(desc(members.createdAt))
-    .limit(1)
 
-  let nextNumber = 1
-  if (lastMember?.memberId) {
-    const match = lastMember.memberId.match(/GNC-(\d+)/)
-    if (match) {
-      nextNumber = parseInt(match[1], 10) + 1
-    }
-  }
-
-  const memberId = `GNC-${String(nextNumber).padStart(4, '0')}`
-
-  const [newMember] = await db
-    .insert(members)
-    .values({
-      memberId,
-      firstName: data.firstName,
-      middleName: data.middleName,
-      lastName: data.lastName,
-      phonePrimary: data.phonePrimary,
-      phoneSecondary: data.phoneSecondary,
-      email: data.email,
-      dateOfBirth: data.dateOfBirth,
-      gender: data.gender,
-      maritalStatus: data.maritalStatus,
-      address: data.address,
-      city: data.city,
-      region: data.region,
-      occupation: data.occupation,
-      memberStatus: data.memberStatus || 'active',
-      joinDate: data.joinDate,
-      baptismDate: data.baptismDate,
-      isBaptized: data.isBaptized || false,
-      emergencyContactName: data.emergencyContactName,
-      emergencyContactPhone: data.emergencyContactPhone,
-      notes: data.notes,
-    })
-    .returning()
-
-  revalidatePath('/members')
-  return newMember
-}
 
 export async function updateMember(
   id: string,
@@ -255,6 +187,47 @@ export async function deleteMember(id: string) {
 
   revalidatePath('/members')
   return deleted
+}
+
+// Define input type
+type CreateMemberInput = Omit<typeof members.$inferInsert, 'id' | 'memberId' | 'createdAt' | 'updatedAt'> & {
+  photoUrl?: string | null
+}
+
+export async function createMember(data: CreateMemberInput) {
+  try {
+    // Generate member ID
+    const memberId = await generateMemberId()
+
+    await db.insert(members).values({
+      ...data,
+      memberId,
+    })
+
+    revalidatePath('/members')
+    return { success: true }
+  } catch (error) {
+    console.error('Error creating member:', error)
+    throw new Error('Failed to create member')
+  }
+}
+
+async function generateMemberId() {
+  const [lastMember] = await db
+    .select({ memberId: members.memberId })
+    .from(members)
+    .orderBy(desc(members.createdAt))
+    .limit(1)
+
+  let nextNumber = 1
+  if (lastMember?.memberId) {
+    const match = lastMember.memberId.match(/GNC-(\d+)/)
+    if (match) {
+      nextNumber = parseInt(match[1], 10) + 1
+    }
+  }
+
+  return `GNC-${String(nextNumber).padStart(4, '0')}`
 }
 
 export async function getDepartments() {

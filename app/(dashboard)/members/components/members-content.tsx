@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
-import Link from 'next/link'
+// import Link from 'next/link' // No longer needed for navigation but maybe for other things, removing if unused
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,9 @@ import { useNotification } from '@/hooks'
 import { AddMemberButton } from './add-member-button'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
+import { MemberDetailsSheet } from '@/components/modals/member-details-sheet'
+import { MemberFormSheet } from '@/components/modals/member-form-sheet'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -87,6 +90,10 @@ export function MembersContent() {
   const [page, setPage] = useState(1)
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [view, setView] = useState<'table' | 'grid'>('table')
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [selectedMemberData, setSelectedMemberData] = useState<any>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const { error: notifyError } = useNotification()
 
   // Debounce search
@@ -111,7 +118,7 @@ export function MembersContent() {
     }
   )
 
-  // Fetch stats
+  // Fetch stats (same as before)
   const { data: statsData, isLoading: statsLoading, error: statsError } = useSWR<StatsResponse>(
     '/api/members/stats',
     fetcher,
@@ -124,30 +131,13 @@ export function MembersContent() {
 
   // Handle errors
   useEffect(() => {
-    if (membersError) {
-      notifyError('Error', 'Failed to load members')
-    }
-  }, [membersError, notifyError])
-
-  useEffect(() => {
-    if (statsError) {
-      notifyError('Error', 'Failed to load member statistics')
-    }
-  }, [statsError, notifyError])
+    if (membersError) notifyError('Error', 'Failed to load members')
+    if (statsError) notifyError('Error', 'Failed to load member statistics')
+  }, [membersError, statsError, notifyError])
 
   const members = membersData?.data || []
-  const pagination = membersData?.pagination || {
-    page: 1,
-    pageSize: 10,
-    total: 0,
-    totalPages: 0,
-  }
-  const stats = statsData?.data || {
-    total: 0,
-    active: 0,
-    inactive: 0,
-    visitors: 0,
-  }
+  const pagination = membersData?.pagination || { page: 1, pageSize: 10, total: 0, totalPages: 0 }
+  const stats = statsData?.data || { total: 0, active: 0, inactive: 0, visitors: 0 }
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase()
@@ -156,6 +146,19 @@ export function MembersContent() {
   const getStatusConfig = (status: string | null) => {
     const key = (status || 'active') as keyof typeof statusConfig
     return statusConfig[key] || statusConfig.active
+  }
+
+  const handleMemberClick = (memberId: string) => {
+    setSelectedMemberId(memberId)
+    setDetailsOpen(true)
+  }
+
+  const handleEdit = (member: any) => {
+    setDetailsOpen(false)
+    setSelectedMemberId(member.id || member)
+    setSelectedMemberData(typeof member === 'object' ? member : null)
+    // Small delay to ensure clean transition
+    setTimeout(() => setEditOpen(true), 50)
   }
 
   return (
@@ -173,35 +176,15 @@ export function MembersContent() {
         <AddMemberButton />
       </div>
 
-      {/* Stats Cards Grid */}
+      {/* Stats Cards Grid (same as before) */}
       {statsLoading ? (
         <SkeletonStat count={4} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatsCard
-            title="Total Members"
-            value={stats.total}
-            icon={Users}
-            color="primary"
-          />
-          <StatsCard
-            title="Active"
-            value={stats.active}
-            icon={UserCheck}
-            color="green"
-          />
-          <StatsCard
-            title="Visitors"
-            value={stats.visitors}
-            icon={UserPlus}
-            color="blue"
-          />
-          <StatsCard
-            title="Inactive"
-            value={stats.inactive}
-            icon={UserX}
-            color="red"
-          />
+          <StatsCard title="Total Members" value={stats.total} icon={Users} color="primary" />
+          <StatsCard title="Active" value={stats.active} icon={UserCheck} color="green" />
+          <StatsCard title="Visitors" value={stats.visitors} icon={UserPlus} color="blue" />
+          <StatsCard title="Inactive" value={stats.inactive} icon={UserX} color="red" />
         </div>
       )}
 
@@ -209,7 +192,6 @@ export function MembersContent() {
       <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
         <CardContent className="pt-6">
           <div className="space-y-4">
-            {/* Search Input */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
@@ -220,7 +202,6 @@ export function MembersContent() {
               />
             </div>
 
-            {/* Filter & View Controls */}
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <Select value={status} onValueChange={(value) => {
                 setStatus(value)
@@ -292,23 +273,30 @@ export function MembersContent() {
                     {members.map((member) => {
                       const statusConfig = getStatusConfig(member.memberStatus)
                       return (
-                        <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                        <tr
+                          key={member.id}
+                          className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer"
+                          onClick={() => handleMemberClick(member.id)}
+                        >
                           <td className="px-6 py-4">
-                            <Link href={`/members/${member.id}`}>
-                              <div className="flex items-center gap-3 cursor-pointer">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 dark:from-primary/40 dark:to-accent/40 flex items-center justify-center font-semibold text-sm text-primary dark:text-accent flex-shrink-0">
-                                  {getInitials(member.firstName, member.lastName)}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
-                                    {member.firstName} {member.lastName}
-                                  </p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    {member.memberId}
-                                  </p>
-                                </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 dark:from-primary/40 dark:to-accent/40 flex items-center justify-center font-semibold text-sm text-primary dark:text-accent flex-shrink-0">
+                                <Avatar className="h-full w-full">
+                                  <AvatarImage src={member.photoUrl || ''} />
+                                  <AvatarFallback className="bg-transparent text-primary dark:text-accent">
+                                    {getInitials(member.firstName, member.lastName)}
+                                  </AvatarFallback>
+                                </Avatar>
                               </div>
-                            </Link>
+                              <div className="min-w-0">
+                                <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
+                                  {member.firstName} {member.lastName}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {member.memberId}
+                                </p>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="space-y-1">
@@ -338,12 +326,18 @@ export function MembersContent() {
                             </p>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <Link href={`/members/${member.id}`}>
-                              <Button variant="ghost" size="sm" className="text-primary dark:text-accent hover:bg-primary/10 dark:hover:bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                View
-                                <ArrowRight className="h-4 w-4 ml-1" />
-                              </Button>
-                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-primary dark:text-accent hover:bg-primary/10 dark:hover:bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMemberClick(member.id)
+                              }}
+                            >
+                              View
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
                           </td>
                         </tr>
                       )
@@ -359,62 +353,69 @@ export function MembersContent() {
             {members.map((member) => {
               const statusConfig = getStatusConfig(member.memberStatus)
               return (
-                <Link key={member.id} href={`/members/${member.id}`}>
-                  <Card className="border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow cursor-pointer group">
-                    <CardContent className="pt-4">
-                      <div className="space-y-4">
-                        {/* Member Header */}
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 dark:from-primary/40 dark:to-accent/40 flex items-center justify-center font-semibold text-primary dark:text-accent flex-shrink-0">
-                            {getInitials(member.firstName, member.lastName)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base truncate">
-                              {member.firstName} {member.lastName}
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              {member.memberId}
-                            </p>
-                          </div>
-                          <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 group-hover:text-primary dark:group-hover:text-accent group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1" />
+                <Card
+                  key={member.id}
+                  className="border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow cursor-pointer group"
+                  onClick={() => handleMemberClick(member.id)}
+                >
+                  <CardContent className="pt-4">
+                    <div className="space-y-4">
+                      {/* Member Header */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 dark:from-primary/40 dark:to-accent/40 flex items-center justify-center font-semibold text-primary dark:text-accent flex-shrink-0">
+                          <Avatar className="h-full w-full">
+                            <AvatarImage src={member.photoUrl || ''} />
+                            <AvatarFallback className="bg-transparent text-primary dark:text-accent">
+                              {getInitials(member.firstName, member.lastName)}
+                            </AvatarFallback>
+                          </Avatar>
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base truncate">
+                            {member.firstName} {member.lastName}
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {member.memberId}
+                          </p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 group-hover:text-primary dark:group-hover:text-accent group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1" />
+                      </div>
 
-                        {/* Member Details */}
-                        <div className="space-y-2 text-sm">
-                          {member.phonePrimary && (
-                            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                              <Phone className="h-4 w-4 flex-shrink-0" />
-                              <span>{member.phonePrimary}</span>
-                            </div>
-                          )}
-                          {member.email && (
-                            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 truncate">
-                              <Mail className="h-4 w-4 flex-shrink-0" />
-                              <span className="truncate">{member.email}</span>
-                            </div>
-                          )}
+                      {/* Member Details */}
+                      <div className="space-y-2 text-sm">
+                        {member.phonePrimary && (
                           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                            <Calendar className="h-4 w-4 flex-shrink-0" />
-                            <span>{member.joinDate ? format(new Date(member.joinDate), 'MMM d, yyyy') : 'N/A'}</span>
+                            <Phone className="h-4 w-4 flex-shrink-0" />
+                            <span>{member.phonePrimary}</span>
                           </div>
-                        </div>
-
-                        {/* Footer with Status */}
-                        <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                          <Badge className={`${statusConfig.color} border text-xs`}>
-                            {statusConfig.label}
-                          </Badge>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">View →</span>
+                        )}
+                        {member.email && (
+                          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 truncate">
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{member.email}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                          <Calendar className="h-4 w-4 flex-shrink-0" />
+                          <span>{member.joinDate ? format(new Date(member.joinDate), 'MMM d, yyyy') : 'N/A'}</span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+
+                      {/* Footer with Status */}
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <Badge className={`${statusConfig.color} border text-xs`}>
+                          {statusConfig.label}
+                        </Badge>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">View →</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )
             })}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination (same as before) */}
           {pagination.totalPages > 1 && (
             <Card className="border-slate-200 dark:border-slate-700">
               <CardContent className="pt-6">
@@ -453,6 +454,20 @@ export function MembersContent() {
           )}
         </>
       )}
+
+      <MemberDetailsSheet
+        memberId={selectedMemberId}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        onEdit={handleEdit}
+      />
+
+      <MemberFormSheet
+        memberId={selectedMemberId}
+        initialData={selectedMemberData}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </main>
   )
 }

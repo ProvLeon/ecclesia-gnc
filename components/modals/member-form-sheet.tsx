@@ -36,7 +36,9 @@ import {
     ChevronLeft,
     Plus,
 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { createMember, getMember, updateMember } from '@/app/actions/members'
+import { MemberProfileUploader } from '@/components/member-profile-uploader'
 
 const memberSchema = z.object({
     firstName: z.string().min(2, 'First name required'),
@@ -65,6 +67,7 @@ type MemberFormData = z.infer<typeof memberSchema>
 
 interface MemberFormSheetProps {
     memberId?: string | null // null = new member, string = editing
+    initialData?: any
     open: boolean
     onOpenChange: (open: boolean) => void
     trigger?: React.ReactNode
@@ -73,12 +76,13 @@ interface MemberFormSheetProps {
 const TABS = ['personal', 'contact', 'church', 'emergency'] as const
 type TabType = typeof TABS[number]
 
-export function MemberFormSheet({ memberId, open, onOpenChange, trigger }: MemberFormSheetProps) {
+export function MemberFormSheet({ memberId, initialData, open, onOpenChange, trigger }: MemberFormSheetProps) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<TabType>('personal')
     const [loading, setLoading] = useState(false)
     const [fetching, setFetching] = useState(false)
     const [success, setSuccess] = useState(false)
+    const [photoUrl, setPhotoUrl] = useState<string | null>(null)
 
     const isEditing = !!memberId
 
@@ -101,6 +105,34 @@ export function MemberFormSheet({ memberId, open, onOpenChange, trigger }: Membe
     // Load member data when editing
     useEffect(() => {
         if (memberId && open) {
+            // If we have initial data, use it immediately
+            if (initialData) {
+                reset({
+                    firstName: initialData.firstName,
+                    middleName: initialData.middleName || '',
+                    lastName: initialData.lastName,
+                    phonePrimary: initialData.phonePrimary || '',
+                    phoneSecondary: initialData.phoneSecondary || '',
+                    email: initialData.email || '',
+                    dateOfBirth: initialData.dateOfBirth ? new Date(initialData.dateOfBirth).toISOString().split('T')[0] : '',
+                    gender: initialData.gender as any,
+                    maritalStatus: initialData.maritalStatus as any,
+                    address: initialData.address || '',
+                    city: initialData.city || '',
+                    region: initialData.region || '',
+                    occupation: initialData.occupation || '',
+                    memberStatus: initialData.memberStatus as any || 'active',
+                    joinDate: initialData.joinDate ? new Date(initialData.joinDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    baptismDate: initialData.baptismDate ? new Date(initialData.baptismDate).toISOString().split('T')[0] : '',
+                    isBaptized: initialData.isBaptized || false,
+                    emergencyContactName: initialData.emergencyContactName || '',
+                    emergencyContactPhone: initialData.emergencyContactPhone || '',
+                    notes: initialData.notes || '',
+                })
+                setPhotoUrl(initialData.photoUrl || null)
+                return
+            }
+
             setFetching(true)
             getMember(memberId).then((member) => {
                 if (member) {
@@ -111,7 +143,7 @@ export function MemberFormSheet({ memberId, open, onOpenChange, trigger }: Membe
                         phonePrimary: member.phonePrimary || '',
                         phoneSecondary: member.phoneSecondary || '',
                         email: member.email || '',
-                        dateOfBirth: member.dateOfBirth || '',
+                        dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : '',
                         gender: member.gender as any,
                         maritalStatus: member.maritalStatus as any,
                         address: member.address || '',
@@ -119,18 +151,19 @@ export function MemberFormSheet({ memberId, open, onOpenChange, trigger }: Membe
                         region: member.region || '',
                         occupation: member.occupation || '',
                         memberStatus: member.memberStatus as any || 'active',
-                        joinDate: member.joinDate || '',
-                        baptismDate: member.baptismDate || '',
+                        joinDate: member.joinDate ? new Date(member.joinDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                        baptismDate: member.baptismDate ? new Date(member.baptismDate).toISOString().split('T')[0] : '',
                         isBaptized: member.isBaptized || false,
                         emergencyContactName: member.emergencyContactName || '',
                         emergencyContactPhone: member.emergencyContactPhone || '',
                         notes: member.notes || '',
                     })
+                    setPhotoUrl(member.photoUrl || null)
                 }
                 setFetching(false)
             })
         }
-    }, [memberId, open, reset])
+    }, [memberId, open, reset, initialData])
 
     useEffect(() => {
         if (!open) {
@@ -152,7 +185,7 @@ export function MemberFormSheet({ memberId, open, onOpenChange, trigger }: Membe
             if (isEditing) {
                 await updateMember(memberId!, { ...data, email: data.email || undefined })
             } else {
-                await createMember({ ...data, email: data.email || undefined })
+                await createMember({ ...data, email: data.email || undefined, photoUrl: photoUrl || undefined })
             }
             setSuccess(true)
             setTimeout(() => {
@@ -225,33 +258,98 @@ export function MemberFormSheet({ memberId, open, onOpenChange, trigger }: Membe
 
                 <div className="p-6">
                     {fetching ? (
-                        <div className="flex items-center justify-center h-64">
-                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        <div className="space-y-6">
+                            {/* Tabs Skeleton */}
+                            <div className="bg-slate-100 dark:bg-slate-800/50 rounded-xl mb-6 pb-2">
+                                <div className="grid grid-cols-4 gap-2 p-1">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <Skeleton key={i} className="h-9 w-full rounded-lg" />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Form Fields Skeleton */}
+                            <div className="space-y-4">
+                                <div className="flex flex-col items-center justify-center mb-6">
+                                    <Skeleton className="h-24 w-24 rounded-full" />
+                                    <Skeleton className="h-4 w-32 mt-2" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-20" />
+                                        <Skeleton className="h-10 w-full" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-20" />
+                                        <Skeleton className="h-10 w-full" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-24" />
+                                        <Skeleton className="h-10 w-full" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-20" />
+                                        <Skeleton className="h-10 w-full" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit(onSubmit)}>
-                            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
-                                <TabsList className="grid grid-cols-4 mb-6">
-                                    <TabsTrigger value="personal" className="text-xs sm:text-sm">
-                                        <User className="h-4 w-4 sm:mr-1.5" />
-                                        <span className="hidden sm:inline">Personal</span>
-                                    </TabsTrigger>
-                                    <TabsTrigger value="contact" className="text-xs sm:text-sm">
-                                        <Phone className="h-4 w-4 sm:mr-1.5" />
-                                        <span className="hidden sm:inline">Contact</span>
-                                    </TabsTrigger>
-                                    <TabsTrigger value="church" className="text-xs sm:text-sm">
-                                        <Heart className="h-4 w-4 sm:mr-1.5" />
-                                        <span className="hidden sm:inline">Church</span>
-                                    </TabsTrigger>
-                                    <TabsTrigger value="emergency" className="text-xs sm:text-sm">
-                                        <AlertCircle className="h-4 w-4 sm:mr-1.5" />
-                                        <span className="hidden sm:inline">Emergency</span>
-                                    </TabsTrigger>
-                                </TabsList>
+                            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
+                                <div className="bg-slate-100 dark:bg-slate-800/50 rounded-xl mb-6 pb-2">
+                                    <TabsList className="grid grid-cols-4 w-full bg-transparent p-0 h-auto">
+                                        <TabsTrigger
+                                            value="personal"
+                                            className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all text-slate-500 rounded-lg"
+                                        >
+                                            <User className="h-4 w-4 sm:mr-1.5" />
+                                            <span className="hidden sm:inline">Personal</span>
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="contact"
+                                            className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all text-slate-500 rounded-lg"
+                                        >
+                                            <Phone className="h-4 w-4 sm:mr-1.5" />
+                                            <span className="hidden sm:inline">Contact</span>
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="church"
+                                            className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all text-slate-500 rounded-lg"
+                                        >
+                                            <Heart className="h-4 w-4 sm:mr-1.5" />
+                                            <span className="hidden sm:inline">Church</span>
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="emergency"
+                                            className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all text-slate-500 rounded-lg"
+                                        >
+                                            <AlertCircle className="h-4 w-4 sm:mr-1.5" />
+                                            <span className="hidden sm:inline">Emergency</span>
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </div>
 
                                 {/* Personal Tab */}
-                                <TabsContent value="personal" className="space-y-4 mt-0">
+                                <TabsContent value="personal" className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                                    {/* Uploader Section */}
+                                    <div className="flex flex-col items-center justify-center mb-6">
+                                        <MemberProfileUploader
+                                            memberId={memberId || undefined}
+                                            firstName={watch('firstName') || ''}
+                                            lastName={watch('lastName') || ''}
+                                            currentPhotoUrl={photoUrl}
+                                            onUploadComplete={(url) => setPhotoUrl(url)}
+                                            size="xl"
+                                        />
+                                        <p className="text-xs text-slate-500 mt-2">Click to upload photo</p>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <FormField label="First Name *" error={errors.firstName?.message}>
                                             <Input {...register('firstName')} placeholder="e.g., John" />

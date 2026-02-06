@@ -10,11 +10,12 @@ import { updateMember } from '@/app/actions/members'
 import { toast } from 'sonner'
 
 interface MemberProfileUploaderProps {
-    memberId: string
+    memberId?: string
     firstName: string
     lastName: string
     currentPhotoUrl?: string | null
     size?: 'sm' | 'md' | 'lg' | 'xl'
+    onUploadComplete?: (url: string) => void
 }
 
 export function MemberProfileUploader({
@@ -22,7 +23,8 @@ export function MemberProfileUploader({
     firstName,
     lastName,
     currentPhotoUrl,
-    size = 'xl'
+    size = 'xl',
+    onUploadComplete
 }: MemberProfileUploaderProps) {
     const router = useRouter()
     const [uploading, setUploading] = useState(false)
@@ -58,7 +60,8 @@ export function MemberProfileUploader({
         try {
             const supabase = createClient()
             const fileExt = file.name.split('.').pop()
-            const fileName = `${memberId}-${Date.now()}.${fileExt}`
+            const id = memberId || 'new'
+            const fileName = `${id}-${Date.now()}.${fileExt}`
             const filePath = `${fileName}`
 
             // Upload image
@@ -75,11 +78,21 @@ export function MemberProfileUploader({
                 .from('member-photos')
                 .getPublicUrl(filePath)
 
-            // Update member profile
-            await updateMember(memberId, { photoUrl: publicUrl })
+            if (onUploadComplete) {
+                onUploadComplete(publicUrl)
+                if (!memberId) {
+                    setUploading(false)
+                    toast.success('Photo uploaded')
+                    return
+                }
+            }
 
-            router.refresh()
-            toast.success('Profile photo updated')
+            // Update member profile if memberId exists
+            if (memberId) {
+                await updateMember(memberId, { photoUrl: publicUrl })
+                router.refresh()
+                toast.success('Profile photo updated')
+            }
 
         } catch (error) {
             console.error('Error uploading photo:', error)

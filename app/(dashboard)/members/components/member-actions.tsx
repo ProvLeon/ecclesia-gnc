@@ -25,21 +25,27 @@ import { deleteMember } from '@/app/actions/members'
 interface MemberActionsProps {
     memberId: string
     memberName: string
+    onEdit?: () => void
 }
 
-export function MemberActions({ memberId, memberName }: MemberActionsProps) {
+export function MemberActions({ memberId, memberName, onEdit }: MemberActionsProps) {
+    const router = useRouter()
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
-    const router = useRouter()
 
-    async function handleDelete() {
+    const handleDelete = async () => {
         setIsDeleting(true)
         try {
-            await deleteMember(memberId)
-            setShowDeleteDialog(false)
-            router.refresh()
+            const result = await deleteMember(memberId)
+            if (result) {
+                setShowDeleteDialog(false)
+                router.refresh()
+            } else {
+                alert('Failed to delete member')
+            }
         } catch (error) {
-            console.error('Failed to delete member:', error)
+            console.error(error)
+            alert('An error occurred')
         } finally {
             setIsDeleting(false)
         }
@@ -49,28 +55,29 @@ export function MemberActions({ memberId, memberName }: MemberActionsProps) {
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
+                    <Button variant="ghost" className="h-8 w-8 p-0">
                         <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4 text-slate-500" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                        <Link href={`/members/${memberId}`} className="flex items-center">
+                        <Link href={`/members/${memberId}`} className="flex items-center cursor-pointer">
                             <Eye className="mr-2 h-4 w-4" />
                             View Profile
                         </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href={`/members/${memberId}/edit`} className="flex items-center">
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                        </Link>
+                    <DropdownMenuItem
+                        onClick={() => onEdit?.()}
+                        className="cursor-pointer"
+                    >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                         onClick={() => setShowDeleteDialog(true)}
-                        className="text-red-600 focus:text-red-600"
+                        className="text-red-600 focus:text-red-600 cursor-pointer"
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Deactivate

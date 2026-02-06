@@ -16,6 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { PromoteToShepherdModal } from '@/components/modals'
+import { MemberEditTrigger } from '@/components/member-edit-trigger'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -76,12 +77,7 @@ export default async function MemberProfilePage({ params }: PageProps) {
               </Button>
             }
           />
-          <Link href={`/members/${id}/edit`}>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Pencil className="h-3.5 w-3.5 mr-2" />
-              Edit
-            </Button>
-          </Link>
+          <MemberEditTrigger memberId={id} />
         </div>
       </div>
 
