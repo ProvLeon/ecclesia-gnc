@@ -14,7 +14,7 @@ import { sendSMS, getMembersForSMS } from '@/app/actions/messages'
 
 export default function ComposeMessagePage() {
     const router = useRouter()
-    const [members, setMembers] = useState<{ id: string; name: string; phone: string; memberId: string }[]>([])
+    const [members, setMembers] = useState<{ id: string; name: string; phone: string | null; memberId: string }[]>([])
     const [search, setSearch] = useState('')
     const [selected, setSelected] = useState<Set<string>>(new Set())
     const [message, setMessage] = useState('')
@@ -27,7 +27,7 @@ export default function ComposeMessagePage() {
 
     const filteredMembers = members.filter((m) =>
         m.name.toLowerCase().includes(search.toLowerCase()) ||
-        m.phone.includes(search) ||
+        (m.phone && m.phone.includes(search)) ||
         m.memberId.toLowerCase().includes(search.toLowerCase())
     )
 
@@ -55,8 +55,8 @@ export default function ComposeMessagePage() {
         setIsSending(true)
         setResult(null)
 
-        const selectedMembers = members.filter((m) => selected.has(m.id))
-        const recipients = selectedMembers.map((m) => ({ memberId: m.id, phone: m.phone }))
+        const selectedMembers = members.filter((m) => selected.has(m.id) && m.phone)
+        const recipients = selectedMembers.map((m) => ({ memberId: m.id, phone: m.phone! }))
 
         try {
             const res = await sendSMS({ recipients, message })

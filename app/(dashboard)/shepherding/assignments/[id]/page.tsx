@@ -362,7 +362,8 @@ export default async function ShepherdAssignmentDetailPage({
             shepherdId={shepherdId}
             unassignedMembers={unassignedMembers.map(m => ({
               ...m,
-              email: m.email ?? undefined
+              email: m.email ?? undefined,
+              phone: m.phone ?? undefined
             }))}
           />
         </div>

@@ -31,6 +31,12 @@ function areNamesSimilar(name1: string, name2: string): boolean {
     return normalize(name1) === normalize(name2)
 }
 
+function cleanString(str: any): string | undefined {
+    if (!str || typeof str !== 'string') return undefined
+    const trimmed = str.trim()
+    return trimmed === '' ? undefined : trimmed
+}
+
 interface SkippedEntry {
     row: number
     name: string
@@ -154,13 +160,17 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                     if (existingMember) {
                         skipped++
                         const isSimilarName = areNamesSimilar(fullName, existingMember.name)
+
+                        // If exact match (same phone + similar name), skip silently as it's likely the same person
+                        if (isSimilarName) {
+                            continue
+                        }
+
                         skippedEntries.push({
                             row: rowNum,
                             name: fullName,
                             phone,
-                            reason: isSimilarName
-                                ? `Duplicate phone - same person already exists as "${existingMember.name}"`
-                                : `Duplicate phone - different name (existing: "${existingMember.name}"). Please verify manually.`,
+                            reason: `Duplicate phone - different name (existing: "${existingMember.name}"). Please verify manually.`,
                             existingMember: existingMember.name,
                             existingMemberId: existingMember.id,
                             rawData: parsed
@@ -173,13 +183,17 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                     if (batchDuplicate) {
                         skipped++
                         const isSimilarName = areNamesSimilar(fullName, batchDuplicate.name)
+
+                        // If exact match in batch, skip silently
+                        if (isSimilarName) {
+                            continue
+                        }
+
                         skippedEntries.push({
                             row: rowNum,
                             name: fullName,
                             phone,
-                            reason: isSimilarName
-                                ? `Duplicate in import batch - same person as row ${batchDuplicate.rowNum} ("${batchDuplicate.name}")`
-                                : `Duplicate phone in import batch - different name from row ${batchDuplicate.rowNum} ("${batchDuplicate.name}"). Please verify manually.`,
+                            reason: `Duplicate phone in import batch - different name from row ${batchDuplicate.rowNum} ("${batchDuplicate.name}"). Please verify manually.`,
                             existingMember: batchDuplicate.name,
                             rawData: parsed
                         })
@@ -199,13 +213,13 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                     lastName,
                     phonePrimary: phone || null,
                     gender,
-                    address: parsed.residence || undefined,
-                    maritalStatus: parsed.maritalStatus?.toLowerCase() as any || undefined,
-                    occupation: parsed.occupation || undefined,
+                    address: cleanString(parsed.residence),
+                    maritalStatus: cleanString(parsed.maritalStatus)?.toLowerCase() as any,
+                    occupation: cleanString(parsed.occupation),
                     memberStatus: 'active',
                     joinDate: new Date().toISOString().split('T')[0],
-                    isBaptized: parsed.baptismStatus?.toLowerCase().includes('yes') ||
-                        parsed.baptismStatus?.toLowerCase().includes('baptized'),
+                    isBaptized: !!(cleanString(parsed.baptismStatus)?.toLowerCase().includes('yes') ||
+                        cleanString(parsed.baptismStatus)?.toLowerCase().includes('baptized')),
                 }).returning()
 
                 // Also add to existingPhoneMap so future rows in this batch don't create duplicates
@@ -499,11 +513,11 @@ export async function resolveSkippedEntry(
             lastName,
             phonePrimary: phone,
             gender,
-            address: parsed.residence || undefined,
-            maritalStatus: parsed.maritalStatus?.toLowerCase() as any || undefined,
-            occupation: parsed.occupation || undefined,
-            isBaptized: parsed.baptismStatus?.toLowerCase().includes('yes') ||
-                parsed.baptismStatus?.toLowerCase().includes('baptized'),
+            address: cleanString(parsed.residence),
+            maritalStatus: cleanString(parsed.maritalStatus)?.toLowerCase() as any,
+            occupation: cleanString(parsed.occupation),
+            isBaptized: !!(cleanString(parsed.baptismStatus)?.toLowerCase().includes('yes') ||
+                cleanString(parsed.baptismStatus)?.toLowerCase().includes('baptized')),
         }
 
         if (action === 'overwrite' && existingMemberId) {
@@ -563,5 +577,49 @@ export async function resolveSkippedEntry(
     } catch (error) {
         console.error('Error resolving skipped entry:', error)
         return { success: false, error: 'Failed to resolve entry' }
+    }
+}
+
+/**
+ * Resolve multiple skipped entries at once
+ */
+export async function resolveSkippedEntries(
+    data: {
+        action: 'overwrite' | 'create' | 'dismiss'
+        entries: Array<{
+            existingMemberId?: string
+            rawData: any
+        }>
+    }
+) {
+    try {
+        const { action, entries } = data
+        let successCount = 0
+        let failCount = 0
+
+        for (const entry of entries) {
+            try {
+                if (action === 'dismiss') {
+                    // Just count as success, UI removes them
+                    successCount++
+                    continue
+                }
+
+                await resolveSkippedEntry({
+                    action: action as 'overwrite' | 'create',
+                    existingMemberId: entry.existingMemberId,
+                    rawData: entry.rawData
+                })
+                successCount++
+            } catch (e) {
+                console.error(e)
+                failCount++
+            }
+        }
+
+        revalidatePath('/members')
+        return { success: true, processed: successCount, failed: failCount }
+    } catch (e) {
+        return { success: false, error: 'Batch processing failed' }
     }
 }

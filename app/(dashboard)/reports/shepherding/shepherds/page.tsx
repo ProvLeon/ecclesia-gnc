@@ -165,7 +165,7 @@ export default async function ShepherdingShepherdsPage() {
                   firstName={shepherd.firstName}
                   lastName={shepherd.lastName}
                   email={shepherd.email || undefined}
-                  phonePrimary={shepherd.phonePrimary}
+                  phonePrimary={shepherd.phonePrimary ?? undefined}
                   assignedDate={shepherd.assignedDate}
                   assignmentCount={shepherd.assignmentCount}
                   assignments={shepherd.assignments}

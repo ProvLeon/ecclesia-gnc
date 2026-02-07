@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, RefreshCw, CheckCircle, AlertCircle, FileSpreadsheet, Users, Wallet, CalendarCheck } from 'lucide-react'
-import { syncMembersFromSheet, syncTithesFromSheet, syncAttendanceFromSheet, getAvailableSheets, resolveSkippedEntry } from '@/app/actions/sync'
+import { syncMembersFromSheet, syncTithesFromSheet, syncAttendanceFromSheet, getAvailableSheets, resolveSkippedEntry, resolveSkippedEntries } from '@/app/actions/sync'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 
 type SkippedEntry = {
     row: number
@@ -33,6 +35,8 @@ export default function DataSettingsPage() {
     const [isSyncing, setIsSyncing] = useState<string | null>(null)
     const [result, setResult] = useState<SyncResult>(null)
     const [resolvingId, setResolvingId] = useState<number | null>(null)
+    const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+    const [isBulkResolving, setIsBulkResolving] = useState(false)
 
     useEffect(() => {
         getAvailableSheets().then((res) => {
@@ -94,8 +98,67 @@ export default function DataSettingsPage() {
             }
         } catch (error) {
             toast.error('An error occurred during resolution')
-        } finally {
             setResolvingId(null)
+        }
+    }
+
+    function toggleRow(row: number) {
+        const newSet = new Set(selectedRows)
+        if (newSet.has(row)) newSet.delete(row)
+        else newSet.add(row)
+        setSelectedRows(newSet)
+    }
+
+    function toggleAll(rows: number[]) {
+        const allSelected = rows.every(r => selectedRows.has(r))
+        const newSet = new Set(selectedRows)
+        if (allSelected) {
+            rows.forEach(r => newSet.delete(r))
+        } else {
+            rows.forEach(r => newSet.add(r))
+        }
+        setSelectedRows(newSet)
+    }
+
+    async function handleBulkResolve(action: 'overwrite' | 'create' | 'dismiss') {
+        if (selectedRows.size === 0) return
+
+        setIsBulkResolving(true)
+        try {
+            const entriesToResolve = result?.skippedEntries?.filter(e => selectedRows.has(e.row)) || []
+
+            if (action === 'dismiss') {
+                setResult(prev => prev ? ({
+                    ...prev,
+                    skippedEntries: prev.skippedEntries?.filter(e => !selectedRows.has(e.row))
+                }) : null)
+                setSelectedRows(new Set())
+                setIsBulkResolving(false)
+                return
+            }
+
+            const res = await resolveSkippedEntries({
+                action,
+                entries: entriesToResolve.map(e => ({
+                    existingMemberId: e.existingMemberId,
+                    rawData: e.rawData
+                }))
+            })
+
+            if (res.success) {
+                toast.success(`Successfully processed ${res.processed} entries`)
+                setResult(prev => prev ? ({
+                    ...prev,
+                    skippedEntries: prev.skippedEntries?.filter(e => !selectedRows.has(e.row))
+                }) : null)
+                setSelectedRows(new Set())
+            } else {
+                toast.error(res.error || 'Failed to process entries')
+            }
+        } catch (error) {
+            toast.error('An error occurred during bulk resolution')
+        } finally {
+            setIsBulkResolving(false)
         }
     }
 
@@ -157,38 +220,88 @@ export default function DataSettingsPage() {
                         </div>
                     </div>
 
-                    {/* Skipped Entries Log - Grouped */}
+                    {/* Skipped Entries Log - Grouped with Tabs */}
                     {result.skippedEntries && result.skippedEntries.length > 0 && (
-                        <div className="space-y-6">
-                            {/* Duplicates */}
-                            {result.skippedEntries.some(e => e.reason.includes('Duplicate')) && (
+                        <Tabs defaultValue="duplicates" className="w-full" onValueChange={() => setSelectedRows(new Set())}>
+                            <TabsList className="grid w-full grid-cols-3 mb-4">
+                                <TabsTrigger value="duplicates">
+                                    Duplicates ({result.skippedEntries.filter(e => e.reason.includes('Duplicate')).length})
+                                </TabsTrigger>
+                                <TabsTrigger value="invalid">
+                                    Invalid ({result.skippedEntries.filter(e => e.reason.includes('Invalid') || e.reason.includes('Missing')).length})
+                                </TabsTrigger>
+                                <TabsTrigger value="errors">
+                                    Errors ({result.skippedEntries.filter(e => !e.reason.includes('Duplicate') && !e.reason.includes('Invalid') && !e.reason.includes('Missing')).length})
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="duplicates">
                                 <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
                                     <CardHeader className="pb-2">
-                                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                                            <Users className="h-5 w-5" />
-                                            <CardTitle className="text-base">Duplicates ({result.skippedEntries.filter(e => e.reason.includes('Duplicate')).length})</CardTitle>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                                                    <Users className="h-5 w-5" />
+                                                    <CardTitle className="text-base">Potential Duplicates</CardTitle>
+                                                </div>
+                                                <CardDescription>Review and decide to overwrite or create.</CardDescription>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                {selectedRows.size > 0 && (
+                                                    <>
+                                                        <Button size="sm" onClick={() => handleBulkResolve('overwrite')} disabled={isBulkResolving}>
+                                                            {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                                            Overwrite ({selectedRows.size})
+                                                        </Button>
+                                                        <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
+                                                            Create ({selectedRows.size})
+                                                        </Button>
+                                                        <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
+                                                            Dismiss ({selectedRows.size})
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                        <CardDescription>Potential duplicate members found. Review and decide to overwrite or create.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <EntriesTable
                                             entries={result.skippedEntries.filter(e => e.reason.includes('Duplicate'))}
                                             handleResolve={handleResolve}
                                             resolvingId={resolvingId}
+                                            selectedRows={selectedRows}
+                                            toggleRow={toggleRow}
+                                            toggleAll={toggleAll}
                                         />
                                     </CardContent>
                                 </Card>
-                            )}
+                            </TabsContent>
 
-                            {/* Invalid Data */}
-                            {result.skippedEntries.some(e => e.reason.includes('Invalid') || e.reason.includes('Missing')) && (
+                            <TabsContent value="invalid">
                                 <Card className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
                                     <CardHeader className="pb-2">
-                                        <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                                            <AlertCircle className="h-5 w-5" />
-                                            <CardTitle className="text-base">Invalid Data ({result.skippedEntries.filter(e => e.reason.includes('Invalid') || e.reason.includes('Missing')).length})</CardTitle>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                                                    <AlertCircle className="h-5 w-5" />
+                                                    <CardTitle className="text-base">Invalid Data</CardTitle>
+                                                </div>
+                                                <CardDescription>Rows with missing or invalid data.</CardDescription>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                {selectedRows.size > 0 && (
+                                                    <>
+                                                        <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
+                                                            {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                                            Force Create ({selectedRows.size})
+                                                        </Button>
+                                                        <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
+                                                            Dismiss ({selectedRows.size})
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                        <CardDescription>Rows with missing or invalid data. Fix in Google Sheets and re-sync.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <EntriesTable
@@ -196,20 +309,39 @@ export default function DataSettingsPage() {
                                             handleResolve={handleResolve}
                                             resolvingId={resolvingId}
                                             forceCreateOnly
+                                            selectedRows={selectedRows}
+                                            toggleRow={toggleRow}
+                                            toggleAll={toggleAll}
                                         />
                                     </CardContent>
                                 </Card>
-                            )}
+                            </TabsContent>
 
-                            {/* Other Errors */}
-                            {result.skippedEntries.some(e => !e.reason.includes('Duplicate') && !e.reason.includes('Invalid') && !e.reason.includes('Missing')) && (
+                            <TabsContent value="errors">
                                 <Card className="border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
                                     <CardHeader className="pb-2">
-                                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-400">
-                                            <AlertCircle className="h-5 w-5" />
-                                            <CardTitle className="text-base">Other Errors ({result.skippedEntries.filter(e => !e.reason.includes('Duplicate') && !e.reason.includes('Invalid') && !e.reason.includes('Missing')).length})</CardTitle>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-400">
+                                                    <AlertCircle className="h-5 w-5" />
+                                                    <CardTitle className="text-base">Other Errors</CardTitle>
+                                                </div>
+                                                <CardDescription>Unexpected errors during processing.</CardDescription>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                {selectedRows.size > 0 && (
+                                                    <>
+                                                        <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
+                                                            {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                                            Force Create ({selectedRows.size})
+                                                        </Button>
+                                                        <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
+                                                            Dismiss ({selectedRows.size})
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                        <CardDescription>Unexpected errors during processing.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <EntriesTable
@@ -217,113 +349,118 @@ export default function DataSettingsPage() {
                                             handleResolve={handleResolve}
                                             resolvingId={resolvingId}
                                             forceCreateOnly
+                                            selectedRows={selectedRows}
+                                            toggleRow={toggleRow}
+                                            toggleAll={toggleAll}
                                         />
                                     </CardContent>
                                 </Card>
-                            )}
+                            </TabsContent>
+                        </Tabs>
                         </div>
-                    )}
-                </div>
             )}
-
-            {/* Sync Members */}
-            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                            <Users className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle>Sync Members</CardTitle>
-                            <CardDescription>Import members from Church Database</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <Select value={selectedSheet} onValueChange={setSelectedSheet}>
-                            <SelectTrigger className="w-full sm:w-[250px]">
-                                <SelectValue placeholder="Select sheet" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {sheets.map((s) => (
-                                    <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={handleSyncMembers} disabled={isSyncing !== null} className="bg-blue-600 hover:bg-blue-700">
-                            {isSyncing === 'members' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
-                                : <><RefreshCw className="h-4 w-4 mr-2" />Sync Members</>}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Sync Tithes */}
-            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
-                            <Wallet className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle>Sync Tithes</CardTitle>
-                            <CardDescription>Import tithe records from Tithes sheet</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Button onClick={handleSyncTithes} disabled={isSyncing !== null} className="bg-green-600 hover:bg-green-700">
-                        {isSyncing === 'tithes' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
-                            : <><RefreshCw className="h-4 w-4 mr-2" />Sync Tithes</>}
-                    </Button>
-                </CardContent>
-            </Card>
-
-            {/* Sync Attendance */}
-            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
-                            <CalendarCheck className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle>Sync Attendance</CardTitle>
-                            <CardDescription>Import attendance records from Attendance sheet</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Button onClick={handleSyncAttendance} disabled={isSyncing !== null} className="bg-amber-600 hover:bg-amber-700">
-                        {isSyncing === 'attendance' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
-                            : <><RefreshCw className="h-4 w-4 mr-2" />Sync Attendance</>}
-                    </Button>
-                </CardContent>
-            </Card>
-
-            {/* Available Sheets */}
-            <Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-5 w-5 text-slate-400" />
-                        <CardTitle className="text-base">Available Sheets</CardTitle>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                        {sheets.length === 0 ? (
-                            <p className="text-sm text-slate-500">Loading sheets...</p>
-                        ) : (
-                            sheets.map((s) => (
-                                <span key={s.title} className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-sm border">
-                                    {s.title}
-                                </span>
-                            ))
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
         </div>
+    )
+}
+
+{/* Sync Members */ }
+<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+    <CardHeader>
+        <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                <Users className="h-6 w-6" />
+            </div>
+            <div>
+                <CardTitle>Sync Members</CardTitle>
+                <CardDescription>Import members from Church Database</CardDescription>
+            </div>
+        </div>
+    </CardHeader>
+    <CardContent className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+            <Select value={selectedSheet} onValueChange={setSelectedSheet}>
+                <SelectTrigger className="w-full sm:w-[250px]">
+                    <SelectValue placeholder="Select sheet" />
+                </SelectTrigger>
+                <SelectContent>
+                    {sheets.map((s) => (
+                        <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Button onClick={handleSyncMembers} disabled={isSyncing !== null} className="bg-blue-600 hover:bg-blue-700">
+                {isSyncing === 'members' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                    : <><RefreshCw className="h-4 w-4 mr-2" />Sync Members</>}
+            </Button>
+        </div>
+    </CardContent>
+</Card>
+
+{/* Sync Tithes */ }
+<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+    <CardHeader>
+        <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                <Wallet className="h-6 w-6" />
+            </div>
+            <div>
+                <CardTitle>Sync Tithes</CardTitle>
+                <CardDescription>Import tithe records from Tithes sheet</CardDescription>
+            </div>
+        </div>
+    </CardHeader>
+    <CardContent>
+        <Button onClick={handleSyncTithes} disabled={isSyncing !== null} className="bg-green-600 hover:bg-green-700">
+            {isSyncing === 'tithes' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                : <><RefreshCw className="h-4 w-4 mr-2" />Sync Tithes</>}
+        </Button>
+    </CardContent>
+</Card>
+
+{/* Sync Attendance */ }
+<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+    <CardHeader>
+        <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                <CalendarCheck className="h-6 w-6" />
+            </div>
+            <div>
+                <CardTitle>Sync Attendance</CardTitle>
+                <CardDescription>Import attendance records from Attendance sheet</CardDescription>
+            </div>
+        </div>
+    </CardHeader>
+    <CardContent>
+        <Button onClick={handleSyncAttendance} disabled={isSyncing !== null} className="bg-amber-600 hover:bg-amber-700">
+            {isSyncing === 'attendance' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                : <><RefreshCw className="h-4 w-4 mr-2" />Sync Attendance</>}
+        </Button>
+    </CardContent>
+</Card>
+
+{/* Available Sheets */ }
+<Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
+    <CardHeader>
+        <div className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-slate-400" />
+            <CardTitle className="text-base">Available Sheets</CardTitle>
+        </div>
+    </CardHeader>
+    <CardContent>
+        <div className="flex flex-wrap gap-2">
+            {sheets.length === 0 ? (
+                <p className="text-sm text-slate-500">Loading sheets...</p>
+            ) : (
+                sheets.map((s) => (
+                    <span key={s.title} className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-sm border">
+                        {s.title}
+                    </span>
+                ))
+            )}
+        </div>
+    </CardContent>
+</Card>
+        </div >
     )
 }
 
@@ -331,19 +468,33 @@ function EntriesTable({
     entries,
     handleResolve,
     resolvingId,
-    forceCreateOnly = false
+    forceCreateOnly = false,
+    selectedRows,
+    toggleRow,
+    toggleAll
 }: {
     entries: SkippedEntry[],
     handleResolve: (entry: SkippedEntry, action: 'overwrite' | 'create' | 'dismiss') => void,
     resolvingId: number | null,
-    forceCreateOnly?: boolean
+    forceCreateOnly?: boolean,
+    selectedRows: Set<number>,
+    toggleRow: (row: number) => void,
+    toggleAll: (currentEntries: SkippedEntry[]) => void
 }) {
+    const allSelected = entries.length > 0 && entries.every(e => selectedRows.has(e.row))
+
     return (
         <div className="rounded-md border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-100 dark:bg-slate-900/30 text-slate-900 dark:text-slate-100 uppercase text-xs font-medium">
                         <tr>
+                            <th className="px-4 py-3 w-[40px]">
+                                <Checkbox
+                                    checked={allSelected}
+                                    onCheckedChange={() => toggleAll(entries)}
+                                />
+                            </th>
                             <th className="px-4 py-3">Row</th>
                             <th className="px-4 py-3">Name</th>
                             <th className="px-4 py-3">Phone</th>
@@ -354,6 +505,12 @@ function EntriesTable({
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
                         {entries.map((entry, i) => (
                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td className="px-4 py-3">
+                                    <Checkbox
+                                        checked={selectedRows.has(entry.row)}
+                                        onCheckedChange={() => toggleRow(entry.row)}
+                                    />
+                                </td>
                                 <td className="px-4 py-3 font-medium">{entry.row}</td>
                                 <td className="px-4 py-3">{entry.name}</td>
                                 <td className="px-4 py-3 text-slate-500">{entry.phone}</td>
