@@ -58,7 +58,7 @@ export function Header({ user }: HeaderProps) {
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                                 <Avatar className="h-9 w-9">
-                                    <AvatarImage src="" alt={user.email || ''} />
+                                    <AvatarImage src={user.user_metadata?.avatar_url || ''} alt={user.email || ''} />
                                     <AvatarFallback className="bg-blue-600 text-white text-sm">
                                         {initials}
                                     </AvatarFallback>

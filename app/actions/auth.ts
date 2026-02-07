@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { users, members } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { DEFAULT_ROLE } from '@/lib/constants/roles'
 
@@ -37,9 +37,25 @@ export async function getUser() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (user && user.id && user.email) {
-    // Ensure user exists in database
+  if (user && user.id) {
+    // Sync user to database and fetch member details
     await syncAuthUserToDatabase(user.id, user.email!)
+
+    // Fetch member profile to get photo
+    const member = await db.query.members.findFirst({
+      where: eq(members.userId, user.id),
+      columns: {
+        photoUrl: true
+      }
+    })
+
+    if (member?.photoUrl) {
+      // Attach member photo to user metadata for easier access in UI
+      user.user_metadata = {
+        ...user.user_metadata,
+        avatar_url: member.photoUrl
+      }
+    }
   }
 
   return user
