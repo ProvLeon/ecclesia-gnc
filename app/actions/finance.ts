@@ -103,6 +103,11 @@ export async function getExpenses(page = 1, pageSize = 10) {
   return { data: results }
 }
 
+import { sendSMS } from './messages'
+import { randomUUID } from 'crypto'
+
+// ... existing imports
+
 export async function recordTithe(data: {
   memberId: string
   amount: number
@@ -112,13 +117,49 @@ export async function recordTithe(data: {
 }) {
   const monthYear = data.paymentDate.slice(0, 7)
 
-  await db.insert(tithes).values({
-    memberId: data.memberId,
-    amount: String(data.amount),
-    paymentDate: data.paymentDate,
-    monthYear,
-    paymentMethod: (data.paymentMethod as 'cash' | 'mobile_money' | 'bank_transfer' | undefined),
-    notes: data.notes,
+  await db.transaction(async (tx) => {
+    // 1. Record Tithe
+    await tx.insert(tithes).values({
+      memberId: data.memberId,
+      amount: String(data.amount),
+      paymentDate: data.paymentDate,
+      monthYear,
+      paymentMethod: (data.paymentMethod as 'cash' | 'mobile_money' | 'bank_transfer' | undefined),
+      notes: data.notes,
+    })
+
+    // 2. Fetch Member for SMS
+    const member = await tx.query.members.findFirst({
+      where: eq(members.id, data.memberId),
+      columns: {
+        id: true,
+        firstName: true,
+        phonePrimary: true,
+        portalToken: true,
+      }
+    })
+
+    if (member && member.phonePrimary) {
+      // 3. Ensure Portal Token Exists
+      let token = member.portalToken
+      if (!token) {
+        token = randomUUID()
+        await tx.update(members)
+          .set({ portalToken: token })
+          .where(eq(members.id, member.id))
+      }
+
+      // 4. Send SMS
+      // Use process.env.NEXT_PUBLIC_APP_URL or fallback to a default if not set
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecclesia-gnc.vercel.app'
+      const magicLink = `${baseUrl}/portal/${token}`
+      const message = `Dear ${member.firstName}, we received your tithe of GH₵ ${data.amount}. God bless you! View details: ${magicLink}`
+
+      await sendSMS({
+        recipients: [{ phone: member.phonePrimary, memberId: member.id }],
+        message,
+      })
+    }
   })
 
   revalidatePath('/finance')
@@ -133,13 +174,47 @@ export async function recordOffering(data: {
   paymentMethod?: string
   isAnonymous?: boolean
 }) {
-  await db.insert(offerings).values({
-    memberId: data.memberId || undefined,
-    amount: String(data.amount),
-    serviceDate: data.serviceDate,
-    offeringType: data.offeringType,
-    paymentMethod: (data.paymentMethod as 'cash' | 'mobile_money' | 'bank_transfer' | undefined),
-    isAnonymous: data.isAnonymous || false,
+  await db.transaction(async (tx) => {
+    await tx.insert(offerings).values({
+      memberId: data.memberId || undefined,
+      amount: String(data.amount),
+      serviceDate: data.serviceDate,
+      offeringType: data.offeringType,
+      paymentMethod: (data.paymentMethod as 'cash' | 'mobile_money' | 'bank_transfer' | undefined),
+      isAnonymous: data.isAnonymous || false,
+    })
+
+    // If linked to a member, send SMS
+    if (data.memberId && !data.isAnonymous) {
+      const member = await tx.query.members.findFirst({
+        where: eq(members.id, data.memberId),
+        columns: {
+          id: true,
+          firstName: true,
+          phonePrimary: true,
+          portalToken: true,
+        }
+      })
+
+      if (member && member.phonePrimary) {
+        let token = member.portalToken
+        if (!token) {
+          token = randomUUID()
+          await tx.update(members)
+            .set({ portalToken: token })
+            .where(eq(members.id, member.id))
+        }
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecclesia-gnc.vercel.app'
+        const magicLink = `${baseUrl}/portal/${token}`
+        const message = `Dear ${member.firstName}, received ${data.offeringType} of GH₵ ${data.amount}. God bless you! Details: ${magicLink}`
+
+        await sendSMS({
+          recipients: [{ phone: member.phonePrimary, memberId: member.id }],
+          message,
+        })
+      }
+    }
   })
 
   revalidatePath('/finance')
