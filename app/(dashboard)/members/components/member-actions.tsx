@@ -37,11 +37,13 @@ export function MemberActions({ memberId, memberName, onEdit }: MemberActionsPro
         setIsDeleting(true)
         try {
             const result = await deleteMember(memberId)
-            if (result) {
+            // @ts-ignore
+            if (result && result.success) {
                 setShowDeleteDialog(false)
                 router.refresh()
             } else {
-                alert('Failed to delete member')
+                // @ts-ignore
+                alert(result?.error || 'Failed to delete member')
             }
         } catch (error) {
             console.error(error)
@@ -80,7 +82,7 @@ export function MemberActions({ memberId, memberName, onEdit }: MemberActionsPro
                         className="text-red-600 focus:text-red-600 cursor-pointer"
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Deactivate
+                        Delete
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -88,11 +90,11 @@ export function MemberActions({ memberId, memberName, onEdit }: MemberActionsPro
             <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Deactivate Member</DialogTitle>
+                        <DialogTitle>Delete Member</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to deactivate <strong>{memberName}</strong>?
-                            This member will be marked as inactive and hidden from active lists.
-                            This action can be undone by an administrator.
+                            Are you sure you want to permanently delete <strong>{memberName}</strong>?
+                            This action cannot be undone. This will delete the member's profile,
+                            attendance records, contributions, and linked user account.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -108,7 +110,7 @@ export function MemberActions({ memberId, memberName, onEdit }: MemberActionsPro
                             onClick={handleDelete}
                             disabled={isDeleting}
                         >
-                            {isDeleting ? 'Deactivating...' : 'Deactivate'}
+                            {isDeleting ? 'Deleting...' : 'Delete Permanently'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

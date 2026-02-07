@@ -174,19 +174,52 @@ export async function updateMember(
   return updated
 }
 
-export async function deleteMember(id: string) {
-  // Soft delete by setting status to inactive
-  const [deleted] = await db
-    .update(members)
-    .set({
-      memberStatus: 'inactive',
-      updatedAt: new Date(),
-    })
-    .where(eq(members.id, id))
-    .returning()
+import { createAdminClient } from '@/lib/supabase/admin'
 
-  revalidatePath('/members')
-  return deleted
+export async function deleteMember(id: string) {
+  try {
+    // 1. Get member details first to find linked user and photo
+    const [member] = await db
+      .select({
+        userId: members.userId,
+        photoUrl: members.photoUrl
+      })
+      .from(members)
+      .where(eq(members.id, id))
+      .limit(1)
+
+    if (!member) return { success: false, error: 'Member not found' }
+
+    const supabase = createAdminClient()
+
+    // 2. Delete photo from storage if exists
+    if (member.photoUrl) {
+      const fileName = member.photoUrl.split('/').pop()
+      if (fileName) {
+        await supabase.storage
+          .from('member-photos')
+          .remove([fileName])
+      }
+    }
+
+    // 3. Delete auth user if exists
+    if (member.userId) {
+      await supabase.auth.admin.deleteUser(member.userId)
+
+      // Also delete from public users table
+      await db.delete(users).where(eq(users.id, member.userId))
+    }
+
+    // 4. Delete member record (cascade will handle related records like attendance/tithes if configured, 
+    //    but we'll delete the member record explicitly)
+    await db.delete(members).where(eq(members.id, id))
+
+    revalidatePath('/members')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting member:', error)
+    return { success: false, error: 'Failed to delete member' }
+  }
 }
 
 // Define input type
