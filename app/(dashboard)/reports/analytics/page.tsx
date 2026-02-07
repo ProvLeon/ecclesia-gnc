@@ -26,7 +26,11 @@ import { getMemberStats } from '@/app/actions/members'
 import { getFinanceStats } from '@/app/actions/finance'
 import { AnalyticsCharts } from './analytics-charts'
 
+import { protectPage } from '@/lib/auth/proxy'
+
 export default async function AnalyticsPage() {
+  await protectPage('reports:view')
+
   const [
     financeTrends,
     attendanceTrends,

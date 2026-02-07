@@ -44,7 +44,11 @@ async function getAttendanceReport() {
   }
 }
 
+import { protectPage } from '@/lib/auth/proxy'
+
 export default async function AttendanceReportPage() {
+  await protectPage('attendance:view')
+
   const { recentServices, totalAttendance, avgAttendance, serviceCount, maxAttendance, minAttendance } =
     await getAttendanceReport()
 
