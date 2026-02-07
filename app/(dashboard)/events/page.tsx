@@ -56,6 +56,7 @@ const EVENT_TYPE_COLORS: Record<string, { bg: string; text: string; border: stri
   },
 }
 
+
 export default async function EventsPage() {
   const [eventsData, stats] = await Promise.all([
     getEvents({ upcoming: true }),
@@ -300,7 +301,7 @@ function StatCard({
 
   return (
     <Card className="border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all group overflow-hidden">
-      <div className={`absolute inset-0 bg-gradient-to-r ${colors.accent} opacity-0 group-hover:opacity-100 transition-opacity`} />
+      <div className={`inset-0 bg-gradient-to-r ${colors.accent} opacity-0 group-hover:opacity-100 transition-opacity`} />
       <CardContent className="p-6 relative">
         <div className="flex items-start justify-between">
           <div className

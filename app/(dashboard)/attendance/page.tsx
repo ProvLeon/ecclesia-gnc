@@ -7,6 +7,7 @@ import { getServices, getAttendanceStats } from '@/app/actions/attendance'
 import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
 
+
 export default async function AttendancePage() {
   const [{ data: services }, stats] = await Promise.all([
     getServices({ pageSize: 10 }),

@@ -10,6 +10,7 @@ import { ComposeMessageModal, BroadcastModal, NewTemplateModal } from '@/compone
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+
 export default async function MessagesPage() {
   const [stats, { data: recentMessages }] = await Promise.all([
     getMessageStats(),
