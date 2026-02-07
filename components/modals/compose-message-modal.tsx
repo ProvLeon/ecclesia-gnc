@@ -49,7 +49,7 @@ export function ComposeMessageModal({ trigger, onSuccess, defaultRecipients }: C
         if (open) {
             getMembersForSMS({ status: 'active' }).then(setMembers)
             if (defaultRecipients) {
-                const map = new Map<string, { name: string; phone: string }>()
+                const map = new Map<string, { name: string; phone: string | null }>()
                 defaultRecipients.forEach((r) => map.set(r.id, { name: r.name, phone: r.phone }))
                 setSelected(map)
             }
