@@ -38,7 +38,10 @@ async function getAllMembers() {
     .orderBy(asc(members.firstName))
 }
 
+import { protectPage } from '@/lib/auth/proxy'
+
 export default async function MembersReportPage() {
+  await protectPage('members:view')
   const memberList = await getAllMembers()
 
   const stats = {

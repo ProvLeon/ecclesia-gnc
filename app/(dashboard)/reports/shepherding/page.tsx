@@ -17,7 +17,11 @@ import { getShepherdingStats, getFollowUps } from '@/app/actions/shepherding'
 import { format } from 'date-fns'
 import { StatCard, ReportHeader, ReportFooter } from '@/components/reports'
 
+import { protectPage } from '@/lib/auth/proxy'
+
 export default async function ShepherdingReportPage() {
+  await protectPage('shepherding:view')
+
   const [stats, { data: scheduled }, { data: completed }] = await Promise.all([
     getShepherdingStats(),
     getFollowUps('pending', 1, 10),

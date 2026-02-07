@@ -19,7 +19,11 @@ import { format } from 'date-fns'
 import { getFinanceStats, getTithes, getOfferings } from '@/app/actions/finance'
 import { StatCard, ReportHeader, ReportFooter } from '@/components/reports'
 
+import { protectPage } from '@/lib/auth/proxy'
+
 export default async function FinanceReportPage() {
+  await protectPage('finances:view')
+
   const [stats, { data: tithes }, { data: offerings }] = await Promise.all([
     getFinanceStats(),
     getTithes(1, 10),
@@ -91,8 +95,8 @@ export default async function FinanceReportPage() {
                   GH₵ {Math.abs(netIncome).toLocaleString()}
                 </p>
                 <div className={`px-3 py-1 rounded-lg text-sm font-semibold flex items-center gap-1.5 mb-1 ${netIncome >= 0
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                   }`}>
                   {netIncome >= 0 ? (
                     <>
@@ -111,8 +115,8 @@ export default async function FinanceReportPage() {
 
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
               <p className={`text-sm font-medium ${netIncome >= 0
-                  ? 'text-green-700 dark:text-green-300'
-                  : 'text-red-700 dark:text-red-300'
+                ? 'text-green-700 dark:text-green-300'
+                : 'text-red-700 dark:text-red-300'
                 }`}>
                 {netIncome >= 0 ? '✓ Financially healthy' : '⚠ Budget deficit'}
               </p>
