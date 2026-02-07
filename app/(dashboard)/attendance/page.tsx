@@ -23,7 +23,7 @@ export default async function AttendancePage() {
           <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base mt-2">Track service attendance and participation</p>
         </div>
         <Link href="/attendance/new" className="w-full sm:w-auto">
-          <Button className="bg-primary hover:bg-primary/90 dark:bg-accent dark:hover:bg-accent/90 dark:text-primary text-white w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             New Service
           </Button>

@@ -48,81 +48,100 @@
 
 :root {
     --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.13 0.04 264.8);
+    --background: oklch(0.985 0.002 247.9);
+    --foreground: oklch(0.145 0.035 255.4);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.13 0.04 264.8);
+    --card-foreground: oklch(0.145 0.035 255.4);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.13 0.04 264.8);
-    /* Navy Blue Primary - #001A4D */
-    --primary: oklch(52.53% 0.2468 262.2);
-    --primary-foreground: oklch(1 0 0);
-    /* Gold/Yellow Accent - #FFC900 */
-    --accent: oklch(0.85 0.21 106.8);
-    --accent-foreground: oklch(0.13 0.04 264.8);
-    /* Gold Secondary - lighter shade */
-    --secondary: oklch(0.13 0.04 264.8);
-    --secondary-foreground: oklch(0.93 0.013 255.5);
-    --muted: oklch(0.92 0.006 264.8);
-    --muted-foreground: oklch(0.55 0.046 257.417);
+    --popover-foreground: oklch(0.145 0.035 255.4);
+
+    /* GNC Brand Identity: Royal Navy & Divine Gold */
+    /* Primary: Deep, authoritative Navy Blue */
+    --primary: oklch(0.42 0.16 265);
+    --primary-foreground: oklch(0.985 0.002 247.9);
+
+    /* Accent: Sophisticated, non-neon Gold */
+    --accent: oklch(0.82 0.16 85);
+    --accent-foreground: oklch(0.25 0.06 254.2);
+
+    /* Secondary: Muted Navy/Slate for support elements */
+    --secondary: oklch(0.94 0.01 247.9);
+    --secondary-foreground: oklch(0.35 0.08 260);
+
+    --muted: oklch(0.94 0.01 247.9);
+    --muted-foreground: oklch(0.55 0.04 257);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.93 0.013 255.5);
-    --input: oklch(0.93 0.013 255.5);
-    --ring: oklch(0.16 0.08 254.2);
-    /* Chart colors - navy and gold based */
-    --chart-1: oklch(0.16 0.08 254.2);
-    --chart-2: oklch(0.85 0.21 106.8);
-    --chart-3: oklch(0.35 0.08 254.2);
-    --chart-4: oklch(0.92 0.12 104.5);
-    --chart-5: oklch(0.25 0.06 254.2);
-    /* Sidebar - Navy blue primary */
-    --sidebar: oklch(0.16 0.08 254.2);
-    --sidebar-foreground: oklch(1 0 0);
-    --sidebar-primary: oklch(0.85 0.21 106.8);
-    --sidebar-primary-foreground: oklch(0.16 0.08 254.2);
-    --sidebar-accent: oklch(0.92 0.12 104.5);
-    --sidebar-accent-foreground: oklch(0.16 0.08 254.2);
-    --sidebar-border: oklch(0.25 0.06 254.2);
-    --sidebar-ring: oklch(0.85 0.21 106.8);
+    --border: oklch(0.91 0.01 254);
+    --input: oklch(0.91 0.01 254);
+    --ring: oklch(0.42 0.16 265);
+    /* Rings match primary */
+
+    /* Chart colors - Harmonious palette */
+    --chart-1: oklch(0.42 0.16 265);
+    /* Navy */
+    --chart-2: oklch(0.82 0.16 85);
+    /* Gold */
+    --chart-3: oklch(0.55 0.18 200);
+    /* Teal/Blue mix */
+    --chart-4: oklch(0.65 0.15 30);
+    /* Soft Red/Orange */
+    --chart-5: oklch(0.70 0.12 150);
+    /* Soft Green */
+
+    /* Sidebar - Matches Primary/Brand */
+    --sidebar: oklch(0.98 0.002 247.9);
+    --sidebar-foreground: oklch(0.35 0.08 260);
+    --sidebar-primary: oklch(0.42 0.16 265);
+    --sidebar-primary-foreground: oklch(0.985 0.002 247.9);
+    --sidebar-accent: oklch(0.94 0.01 247.9);
+    --sidebar-accent-foreground: oklch(0.35 0.08 260);
+    --sidebar-border: oklch(0.91 0.01 254);
+    --sidebar-ring: oklch(0.42 0.16 265);
 }
 
 .dark {
-    --background: oklch(0.13 0.04 264.8);
-    --foreground: oklch(0.98 0.003 247.9);
-    --card: oklch(0.22 0.05 254.2);
-    --card-foreground: oklch(0.98 0.003 247.9);
-    --popover: oklch(0.22 0.05 254.2);
-    --popover-foreground: oklch(0.98 0.003 247.9);
-    /* Navy Blue Primary - lighter for dark mode */
-    --primary: oklch(0.92 0.12 104.5);
-    --primary-foreground: oklch(0.16 0.08 254.2);
-    /* Gold Accent - brighter in dark mode */
-    --accent: oklch(0.88 0.22 107.5);
-    --accent-foreground: oklch(0.16 0.08 254.2);
-    /* Gold Secondary */
-    --secondary: oklch(0.80 0.18 105.2);
-    --secondary-foreground: oklch(0.98 0.003 247.9);
-    --muted: oklch(0.35 0.04 254.2);
-    --muted-foreground: oklch(0.75 0.03 254.2);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 12%);
-    --input: oklch(1 0 0 / 18%);
-    --ring: oklch(0.88 0.22 107.5);
-    /* Chart colors - dark mode */
-    --chart-1: oklch(0.92 0.12 104.5);
-    --chart-2: oklch(0.88 0.22 107.5);
-    --chart-3: oklch(0.70 0.15 107.0);
-    --chart-4: oklch(0.80 0.18 105.2);
-    --chart-5: oklch(0.60 0.12 106.5);
-    /* Sidebar - Navy blue dark */
-    --sidebar: oklch(0.16 0.08 254.2);
-    --sidebar-foreground: oklch(0.98 0.003 247.9);
-    --sidebar-primary: oklch(0.92 0.12 104.5);
-    --sidebar-primary-foreground: oklch(0.16 0.08 254.2);
-    --sidebar-accent: oklch(0.88 0.22 107.5);
-    --sidebar-accent-foreground: oklch(0.16 0.08 254.2);
-    --sidebar-border: oklch(1 0 0 / 12%);
-    --sidebar-ring: oklch(0.88 0.22 107.5);
+    --background: oklch(0.16 0.03 260);
+    /* Deep Slate/Navy tint */
+    --foreground: oklch(0.96 0.01 260);
+    --card: oklch(0.16 0.03 260);
+    --card-foreground: oklch(0.96 0.01 260);
+    --popover: oklch(0.16 0.03 260);
+    --popover-foreground: oklch(0.96 0.01 260);
+
+    /* Dark Mode Primary: Slightly brighter Navy for visibility */
+    --primary: oklch(0.82 0.16 85);
+    --primary-foreground: oklch(0.985 0.002 247.9);
+
+    /* Dark Mode Accent: Rich Gold */
+    --accent: oklch(0.82 0.16 85);
+    --accent-foreground: oklch(0.25 0.06 254.2);
+
+    --secondary: oklch(0.22 0.04 260);
+    --secondary-foreground: oklch(0.96 0.01 260);
+
+    --muted: oklch(0.22 0.04 260);
+    --muted-foreground: oklch(0.65 0.03 260);
+    --destructive: oklch(0.65 0.22 25);
+    --border: oklch(0.25 0.04 260);
+    --input: oklch(0.25 0.04 260);
+    --ring: oklch(0.55 0.18 265);
+
+    /* Chart colors - Dark mode optimized */
+    --chart-1: oklch(0.55 0.18 265);
+    --chart-2: oklch(0.82 0.16 85);
+    --chart-3: oklch(0.60 0.16 200);
+    --chart-4: oklch(0.70 0.15 30);
+    --chart-5: oklch(0.75 0.12 150);
+
+    /* Sidebar - Dark Mode */
+    --sidebar: oklch(0.14 0.03 260);
+    --sidebar-foreground: oklch(0.96 0.01 260);
+    --sidebar-primary: oklch(0.55 0.18 265);
+    --sidebar-primary-foreground: oklch(0.985 0.002 247.9);
+    --sidebar-accent: oklch(0.22 0.04 260);
+    --sidebar-accent-foreground: oklch(0.96 0.01 260);
+    --sidebar-border: oklch(0.25 0.04 260);
+    --sidebar-ring: oklch(0.55 0.18 265);
 }
 
 @layer base {

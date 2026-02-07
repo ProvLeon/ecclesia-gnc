@@ -127,7 +127,7 @@ export default async function ShepherdingPage() {
                             </a>
                           )}
                           <Link href={`/shepherding/${f.id}/complete`}>
-                            <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20">
+                            <Button size="sm" variant="outline" className="transition-opacity hover:border-green-200 dark:hover:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20">
                               <CheckCircle className="h-4 w-4 mr-1" />
                               Complete
                             </Button>

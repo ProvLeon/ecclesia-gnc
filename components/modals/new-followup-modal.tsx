@@ -150,22 +150,22 @@ export function NewFollowUpModal({ trigger, onSuccess }: NewFollowUpModalProps) 
           ) : (
             <div className="space-y-3">
               {/* Selected Member Card */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/20 dark:bg-primary/20 border border-primary/20 dark:border-primary/20">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-800 flex items-center justify-center">
-                    <User className="h-5 w-5 text-rose-600 dark:text-rose-300" />
+                  <div className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/20 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-rose-900 dark:text-rose-100">{selectedMember.name}</p>
-                    <p className="text-xs text-rose-600 dark:text-rose-400">{selectedMember.phone}</p>
+                    <p className="font-medium text-primary dark:text-white">{selectedMember.name}</p>
+                    <p className="text-xs text-primary dark:text-white">{selectedMember.phone}</p>
                   </div>
                 </div>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setSelectedMember(null)}
-                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-100"
+                // className="text-primary hover:text-primary/80"
                 >
                   Change
                 </Button>
@@ -221,7 +221,7 @@ export function NewFollowUpModal({ trigger, onSuccess }: NewFollowUpModalProps) 
             <Button
               type="submit"
               disabled={loading || !selectedMember}
-              className="bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+            // className="bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
             >
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Schedule

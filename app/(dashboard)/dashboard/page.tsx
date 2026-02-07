@@ -8,6 +8,7 @@ import { eq, sql, gte, desc, inArray, and } from 'drizzle-orm'
 import { getCurrentUserWithRole, getScopedMemberIds } from '@/lib/auth/proxy'
 import { hasPermission } from '@/lib/constants/roles'
 import { redirect } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 async function getDashboardStats(scopedMemberIds: string[] | null) {
   const today = new Date()
@@ -269,37 +270,40 @@ export default async function DashboardPage() {
                 <p className="text-sm text-slate-600 dark:text-slate-300">Pastoral care assignments awaiting shepherd action</p>
               </div>
             </div>
-            <Link href="/shepherding" className={buttonVariants({ variant: "default", size: "lg" })}>
+            <Link href="/shepherding" className={cn(buttonVariants({ variant: "default", size: "lg" }), "text-background")}>
               Review <Target className="h-4 w-4 ml-2" />
             </Link>
           </CardContent>
         </Card>
-      )}
+      )
+      }
 
       {/* Insights Card */}
-      {hasPermission(user.role, 'reports:view') && (
-        <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-primary/10 dark:bg-primary/20 flex-shrink-0">
-                <Activity className="h-5 w-5 text-primary dark:text-accent" />
+      {
+        hasPermission(user.role, 'reports:view') && (
+          <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-primary/10 dark:bg-primary/20 flex-shrink-0">
+                  <Activity className="h-5 w-5 text-primary dark:text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 dark:text-white">Dashboard Insights</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                    Your congregation is growing with <span className="font-semibold text-primary dark:text-accent">{stats.newMembers} new member{stats.newMembers !== 1 ? 's' : ''}</span> this month and an average of <span className="font-semibold text-primary dark:text-accent">{stats.sundayAttendance}</span> attendees per service.
+                  </p>
+                  <Link href="/reports/analytics" className="inline-block mt-4">
+                    <Button variant="outline" size="sm" className="border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700">
+                      View Analytics <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-900 dark:text-white">Dashboard Insights</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-                  Your congregation is growing with <span className="font-semibold text-primary dark:text-accent">{stats.newMembers} new member{stats.newMembers !== 1 ? 's' : ''}</span> this month and an average of <span className="font-semibold text-primary dark:text-accent">{stats.sundayAttendance}</span> attendees per service.
-                </p>
-                <Link href="/reports/analytics" className="inline-block mt-4">
-                  <Button variant="outline" size="sm" className="border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700">
-                    View Analytics <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </main>
+            </CardContent>
+          </Card>
+        )
+      }
+    </main >
   )
 }
 

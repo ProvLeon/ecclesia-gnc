@@ -3,7 +3,6 @@
 import React from 'react'
 import { useNotification, type Toast } from '@/contexts/NotificationContext'
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
-import { colors, transitions, animations, spacing } from '@/lib/design/tokens'
 
 const iconMap = {
   success: CheckCircle,
@@ -12,11 +11,11 @@ const iconMap = {
   info: Info,
 }
 
-const colorMap = {
-  success: colors.success[600],
-  error: colors.error[600],
-  warning: colors.warning[600],
-  info: colors.primary[600],
+const colorClassMap = {
+  success: 'text-green-600 dark:text-green-400',
+  error: 'text-red-600 dark:text-red-400',
+  warning: 'text-amber-600 dark:text-amber-400',
+  info: 'text-blue-600 dark:text-blue-400',
 }
 
 interface ToastItemProps {
@@ -26,20 +25,21 @@ interface ToastItemProps {
 
 function ToastItem({ toast, onRemove }: ToastItemProps) {
   const Icon = iconMap[toast.type]
-  const iconColor = colorMap[toast.type]
+  const colorClass = colorClassMap[toast.type]
+
+  // Animation: animate-in fade-in slide-in-from-bottom-5 duration-300
+  // Background: white in light, slate-800 in dark
+  // Border: slate-200 in light, slate-700 in dark
+  // Shadow: shadow-lg
 
   return (
     <div
-      className="flex items-start gap-3 px-4 py-3 rounded-lg bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-lg"
+      className="flex items-start gap-3 px-4 py-3 rounded-lg bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-lg animate-in fade-in slide-in-from-bottom-5 duration-300"
       role="alert"
       aria-live="polite"
-      style={{
-        animation: `slideInUp ${animations.slideInUp.duration} ${animations.slideInUp.timing}`,
-      }}
     >
       <Icon
-        className="h-5 w-5 flex-shrink-0 mt-0.5"
-        style={{ color: iconColor }}
+        className={`h-5 w-5 flex-shrink-0 mt-0.5 ${colorClass}`}
         aria-hidden="true"
       />
 
@@ -55,8 +55,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
         {toast.action && (
           <button
             onClick={toast.action.onClick}
-            className="text-sm font-medium mt-2 hover:underline"
-            style={{ color: iconColor }}
+            className={`text-sm font-medium mt-2 hover:underline ${colorClass}`}
           >
             {toast.action.label}
           </button>
@@ -67,9 +66,6 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
         onClick={() => onRemove(toast.id)}
         className="flex-shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
         aria-label="Close notification"
-        style={{
-          transition: `color ${transitions.base} ${transitions.timing.ease}`,
-        }}
       >
         <X className="h-4 w-4" />
       </button>
