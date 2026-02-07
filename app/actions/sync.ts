@@ -37,6 +37,8 @@ interface SkippedEntry {
     phone: string
     reason: string
     existingMember?: string
+    existingMemberId?: string
+    rawData?: any // Store parsed data for resolution
 }
 
 export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBERSHIP) {
@@ -50,11 +52,12 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
         const headers = rows[0] as string[]
         const dataRows = rows.slice(1)
 
-        // Get last member ID
+
+        // Get last member ID - Sort by memberId to strictly get the highest number
         const [lastMember] = await db
             .select({ memberId: members.memberId })
             .from(members)
-            .orderBy(desc(members.createdAt))
+            .orderBy(desc(members.memberId))
             .limit(1)
 
         let nextNumber = 1
@@ -95,17 +98,19 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
         for (let i = 0; i < dataRows.length; i++) {
             const row = dataRows[i]
             const rowNum = i + 2 // +2 because row 1 is header, and array is 0-indexed
+            let idAssigned = false
 
             try {
                 const parsed = parseMembershipRow(headers, row as string[])
 
-                if (!parsed.name || !parsed.telephone) {
+                if (!parsed.name) {
                     skipped++
                     skippedEntries.push({
                         row: rowNum,
-                        name: parsed.name || 'Unknown',
-                        phone: parsed.telephone || 'Missing',
-                        reason: 'Missing required fields (name or phone)'
+                        name: 'Unknown',
+                        phone: 'N/A',
+                        reason: 'Missing name',
+                        rawData: parsed
                     })
                     continue
                 }
@@ -122,63 +127,77 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                 if (sex === 'm' || sex === 'male') gender = 'male'
                 else if (sex === 'f' || sex === 'female') gender = 'female'
 
-                // Clean phone
-                const phone = parsed.telephone.replace(/\D/g, '').replace(/^233/, '0')
-                if (phone.length < 9) {
-                    skipped++
-                    skippedEntries.push({
-                        row: rowNum,
-                        name: fullName,
-                        phone: parsed.telephone,
-                        reason: 'Invalid phone number (too short)'
-                    })
-                    continue
+                // Clean phone if present
+                let phone: string | undefined = undefined
+                if (parsed.telephone) {
+                    const cleaned = parsed.telephone.replace(/\D/g, '').replace(/^233/, '0')
+                    // Only use phone if it looks valid-ish (at least 9 digits)
+                    if (cleaned.length >= 9) {
+                        phone = cleaned
+                    } else if (parsed.telephone.trim().length > 0) {
+                        // Phone was provided but invalid - log warning and skip
+                        skipped++
+                        skippedEntries.push({
+                            row: rowNum,
+                            name: fullName,
+                            phone: parsed.telephone,
+                            reason: 'Invalid phone number (too short)',
+                            rawData: parsed
+                        })
+                        continue
+                    }
                 }
 
-                // Check 1: Duplicate in existing database
-                const existingMember = existingPhoneMap.get(phone)
-                if (existingMember) {
-                    skipped++
-                    const isSimilarName = areNamesSimilar(fullName, existingMember.name)
-                    skippedEntries.push({
-                        row: rowNum,
-                        name: fullName,
-                        phone,
-                        reason: isSimilarName
-                            ? `Duplicate phone - same person already exists as "${existingMember.name}"`
-                            : `Duplicate phone - different name (existing: "${existingMember.name}"). Please verify manually.`,
-                        existingMember: existingMember.name
-                    })
-                    continue
+                // Check 1: Duplicate in existing database check (Only if phone exists)
+                if (phone) {
+                    const existingMember = existingPhoneMap.get(phone)
+                    if (existingMember) {
+                        skipped++
+                        const isSimilarName = areNamesSimilar(fullName, existingMember.name)
+                        skippedEntries.push({
+                            row: rowNum,
+                            name: fullName,
+                            phone,
+                            reason: isSimilarName
+                                ? `Duplicate phone - same person already exists as "${existingMember.name}"`
+                                : `Duplicate phone - different name (existing: "${existingMember.name}"). Please verify manually.`,
+                            existingMember: existingMember.name,
+                            existingMemberId: existingMember.id,
+                            rawData: parsed
+                        })
+                        continue
+                    }
+
+                    // Check 2: Duplicate within this import batch
+                    const batchDuplicate = importBatchPhones.get(phone)
+                    if (batchDuplicate) {
+                        skipped++
+                        const isSimilarName = areNamesSimilar(fullName, batchDuplicate.name)
+                        skippedEntries.push({
+                            row: rowNum,
+                            name: fullName,
+                            phone,
+                            reason: isSimilarName
+                                ? `Duplicate in import batch - same person as row ${batchDuplicate.rowNum} ("${batchDuplicate.name}")`
+                                : `Duplicate phone in import batch - different name from row ${batchDuplicate.rowNum} ("${batchDuplicate.name}"). Please verify manually.`,
+                            existingMember: batchDuplicate.name,
+                            rawData: parsed
+                        })
+                        continue
+                    }
+
+                    // Track this phone in the batch
+                    importBatchPhones.set(phone, { rowNum, name: fullName })
                 }
 
-                // Check 2: Duplicate within this import batch
-                const batchDuplicate = importBatchPhones.get(phone)
-                if (batchDuplicate) {
-                    skipped++
-                    const isSimilarName = areNamesSimilar(fullName, batchDuplicate.name)
-                    skippedEntries.push({
-                        row: rowNum,
-                        name: fullName,
-                        phone,
-                        reason: isSimilarName
-                            ? `Duplicate in import batch - same person as row ${batchDuplicate.rowNum} ("${batchDuplicate.name}")`
-                            : `Duplicate phone in import batch - different name from row ${batchDuplicate.rowNum} ("${batchDuplicate.name}"). Please verify manually.`,
-                        existingMember: batchDuplicate.name
-                    })
-                    continue
-                }
-
-                // Track this phone in the batch
-                importBatchPhones.set(phone, { rowNum, name: fullName })
-
+                idAssigned = true // We are about to use the ID
                 const memberId = `GNC-${String(nextNumber).padStart(4, '0')}`
 
                 const [newMember] = await db.insert(members).values({
                     memberId,
                     firstName,
                     lastName,
-                    phonePrimary: phone,
+                    phonePrimary: phone || null,
                     gender,
                     address: parsed.residence || undefined,
                     maritalStatus: parsed.maritalStatus?.toLowerCase() as any || undefined,
@@ -190,7 +209,9 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                 }).returning()
 
                 // Also add to existingPhoneMap so future rows in this batch don't create duplicates
-                existingPhoneMap.set(phone, { id: newMember.id, name: fullName })
+                if (phone) {
+                    existingPhoneMap.set(phone, { id: newMember.id, name: fullName })
+                }
 
                 // Auto-link to department if specified in sheet
                 if (parsed.department && parsed.department.trim()) {
@@ -213,15 +234,22 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                 }
 
                 imported++
-                nextNumber++
+                // Increment moved to finally block to ensure it happens if we used the ID
             } catch (err) {
                 skipped++
                 skippedEntries.push({
                     row: rowNum,
                     name: 'Unknown',
                     phone: 'Unknown',
-                    reason: `Error processing row: ${err instanceof Error ? err.message : 'Unknown error'}`
+                    reason: `Error processing row: ${err instanceof Error ? err.message : 'Unknown error'}`,
+                    rawData: null
                 })
+            } finally {
+                // If we attempted to assign an ID (meaning we passed validation checks), increment nextNumber
+                // so the next row gets a fresh ID even if this one failed DB insert
+                if (idAssigned) {
+                    nextNumber++
+                }
             }
         }
 
@@ -434,5 +462,106 @@ export async function syncAttendanceFromSheet() {
         }
     } catch (error) {
         return { success: false, error: (error as Error).message, imported: 0 }
+    }
+}
+
+/**
+ * Resolve a skipped entry from the import process
+ */
+export async function resolveSkippedEntry(
+    data: {
+        action: 'overwrite' | 'create'
+        existingMemberId?: string
+        rawData: any // The original parsed row data
+    }
+) {
+    try {
+        const { action, existingMemberId, rawData } = data
+        const parsed = rawData
+
+        // Re-construct member data from raw parsed data
+        // Split name into first/last
+        const nameParts = parsed.name.trim().split(/\s+/)
+        const firstName = nameParts[0] || 'Unknown'
+        const lastName = nameParts.slice(1).join(' ') || ''
+
+        // Parse gender
+        let gender: 'male' | 'female' | undefined
+        const sex = parsed.sex?.toLowerCase()
+        if (sex === 'm' || sex === 'male') gender = 'male'
+        else if (sex === 'f' || sex === 'female') gender = 'female'
+
+        // Clean phone
+        const phone = parsed.telephone ? parsed.telephone.replace(/\D/g, '').replace(/^233/, '0') : null
+
+        const memberData = {
+            firstName,
+            lastName,
+            phonePrimary: phone,
+            gender,
+            address: parsed.residence || undefined,
+            maritalStatus: parsed.maritalStatus?.toLowerCase() as any || undefined,
+            occupation: parsed.occupation || undefined,
+            isBaptized: parsed.baptismStatus?.toLowerCase().includes('yes') ||
+                parsed.baptismStatus?.toLowerCase().includes('baptized'),
+        }
+
+        if (action === 'overwrite' && existingMemberId) {
+            // Update existing member
+            await db.update(members)
+                .set({ ...memberData, updatedAt: new Date() })
+                .where(eq(members.id, existingMemberId))
+
+            revalidatePath('/members')
+            return { success: true, message: 'Member updated successfully' }
+        }
+        else if (action === 'create') {
+            // Generate ID
+            const [lastMember] = await db
+                .select({ memberId: members.memberId })
+                .from(members)
+                .orderBy(desc(members.createdAt))
+                .limit(1)
+
+            let nextNumber = 1
+            if (lastMember?.memberId) {
+                const match = lastMember.memberId.match(/GNC-(\d+)/)
+                if (match) nextNumber = parseInt(match[1], 10) + 1
+            }
+            const memberId = `GNC-${String(nextNumber).padStart(4, '0')}`
+
+            // Create new member
+            const [newMember] = await db.insert(members).values({
+                ...memberData,
+                memberId,
+                memberStatus: 'active',
+                joinDate: new Date().toISOString().split('T')[0],
+            }).returning()
+
+            // Link department if provided
+            if (parsed.department && parsed.department.trim()) {
+                try {
+                    const { findOrCreateDepartment } = await import('./departments')
+                    const { memberDepartments } = await import('@/lib/db/schema')
+                    const deptId = await findOrCreateDepartment(parsed.department)
+                    await db.insert(memberDepartments).values({
+                        memberId: newMember.id,
+                        departmentId: deptId,
+                        isActive: true,
+                        joinDate: new Date().toISOString().split('T')[0],
+                    }).onConflictDoNothing()
+                } catch (e) {
+                    console.error('Failed to link department during resolution', e)
+                }
+            }
+
+            revalidatePath('/members')
+            return { success: true, message: 'New member created successfully' }
+        }
+
+        return { success: false, error: 'Invalid action or missing ID' }
+    } catch (error) {
+        console.error('Error resolving skipped entry:', error)
+        return { success: false, error: 'Failed to resolve entry' }
     }
 }
