@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { members, departments } from '@/lib/db/schema'
+import { members, departments, users } from '@/lib/db/schema'
 import { eq, ilike, or, and, desc, asc, count, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
