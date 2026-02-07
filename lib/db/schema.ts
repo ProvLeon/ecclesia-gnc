@@ -154,7 +154,7 @@ export const members = pgTable('members', {
   dateOfBirth: date('date_of_birth'),
   gender: genderEnum('gender'),
   maritalStatus: maritalStatusEnum('marital_status'),
-  phonePrimary: varchar('phone_primary', { length: 20 }).notNull(),
+  phonePrimary: varchar('phone_primary', { length: 20 }),
   phoneSecondary: varchar('phone_secondary', { length: 20 }),
   email: varchar('email', { length: 255 }),
   address: text('address'),
