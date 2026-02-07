@@ -120,7 +120,7 @@ export default async function MemberPortalPage({ params }: PageProps) {
                                             <p className="font-medium text-slate-900 dark:text-white">GH₵ {t.amount}</p>
                                             <p className="text-xs text-slate-500">{format(new Date(t.paymentDate), 'MMM d, yyyy')}</p>
                                         </div>
-                                        <Badge variant="outline" className="text-xs">{t.category?.replace('_', ' ') || 'Tithe'}</Badge>
+                                        <Badge variant="outline" className="text-xs">Tithe</Badge>
                                     </div>
                                 ))}
                             </div>
