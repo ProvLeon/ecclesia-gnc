@@ -109,7 +109,8 @@ export default function DataSettingsPage() {
         setSelectedRows(newSet)
     }
 
-    function toggleAll(rows: number[]) {
+    function toggleAll(currentEntries: SkippedEntry[]) {
+        const rows = currentEntries.map(e => e.row)
         const allSelected = rows.every(r => selectedRows.has(r))
         const newSet = new Set(selectedRows)
         if (allSelected) {
@@ -222,245 +223,247 @@ export default function DataSettingsPage() {
 
                     {/* Skipped Entries Log - Grouped with Tabs */}
                     {result.skippedEntries && result.skippedEntries.length > 0 && (
-                        <Tabs defaultValue="duplicates" className="w-full" onValueChange={() => setSelectedRows(new Set())}>
-                            <TabsList className="grid w-full grid-cols-3 mb-4">
-                                <TabsTrigger value="duplicates">
-                                    Duplicates ({result.skippedEntries.filter(e => e.reason.includes('Duplicate')).length})
-                                </TabsTrigger>
-                                <TabsTrigger value="invalid">
-                                    Invalid ({result.skippedEntries.filter(e => e.reason.includes('Invalid') || e.reason.includes('Missing')).length})
-                                </TabsTrigger>
-                                <TabsTrigger value="errors">
-                                    Errors ({result.skippedEntries.filter(e => !e.reason.includes('Duplicate') && !e.reason.includes('Invalid') && !e.reason.includes('Missing')).length})
-                                </TabsTrigger>
-                            </TabsList>
+                        <div className="mt-6">
+                            <Tabs defaultValue="duplicates" className="w-full" onValueChange={() => setSelectedRows(new Set())}>
+                                <TabsList className="grid w-full grid-cols-3 mb-4">
+                                    <TabsTrigger value="duplicates">
+                                        Duplicates ({result.skippedEntries.filter(e => e.reason.includes('Duplicate')).length})
+                                    </TabsTrigger>
+                                    <TabsTrigger value="invalid">
+                                        Invalid ({result.skippedEntries.filter(e => e.reason.includes('Invalid') || e.reason.includes('Missing')).length})
+                                    </TabsTrigger>
+                                    <TabsTrigger value="errors">
+                                        Errors ({result.skippedEntries.filter(e => !e.reason.includes('Duplicate') && !e.reason.includes('Invalid') && !e.reason.includes('Missing')).length})
+                                    </TabsTrigger>
+                                </TabsList>
 
-                            <TabsContent value="duplicates">
-                                <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
-                                    <CardHeader className="pb-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                                                    <Users className="h-5 w-5" />
-                                                    <CardTitle className="text-base">Potential Duplicates</CardTitle>
+                                <TabsContent value="duplicates">
+                                    <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                                                        <Users className="h-5 w-5" />
+                                                        <CardTitle className="text-base">Potential Duplicates</CardTitle>
+                                                    </div>
+                                                    <CardDescription>Review and decide to overwrite or create.</CardDescription>
                                                 </div>
-                                                <CardDescription>Review and decide to overwrite or create.</CardDescription>
+                                                <div className="flex gap-2">
+                                                    {selectedRows.size > 0 && (
+                                                        <>
+                                                            <Button size="sm" onClick={() => handleBulkResolve('overwrite')} disabled={isBulkResolving}>
+                                                                {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                                                Overwrite ({selectedRows.size})
+                                                            </Button>
+                                                            <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
+                                                                Create ({selectedRows.size})
+                                                            </Button>
+                                                            <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
+                                                                Dismiss ({selectedRows.size})
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {selectedRows.size > 0 && (
-                                                    <>
-                                                        <Button size="sm" onClick={() => handleBulkResolve('overwrite')} disabled={isBulkResolving}>
-                                                            {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                                                            Overwrite ({selectedRows.size})
-                                                        </Button>
-                                                        <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
-                                                            Create ({selectedRows.size})
-                                                        </Button>
-                                                        <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
-                                                            Dismiss ({selectedRows.size})
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <EntriesTable
-                                            entries={result.skippedEntries.filter(e => e.reason.includes('Duplicate'))}
-                                            handleResolve={handleResolve}
-                                            resolvingId={resolvingId}
-                                            selectedRows={selectedRows}
-                                            toggleRow={toggleRow}
-                                            toggleAll={toggleAll}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <EntriesTable
+                                                entries={result.skippedEntries.filter(e => e.reason.includes('Duplicate'))}
+                                                handleResolve={handleResolve}
+                                                resolvingId={resolvingId}
+                                                selectedRows={selectedRows}
+                                                toggleRow={toggleRow}
+                                                toggleAll={toggleAll}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
 
-                            <TabsContent value="invalid">
-                                <Card className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
-                                    <CardHeader className="pb-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                                                    <AlertCircle className="h-5 w-5" />
-                                                    <CardTitle className="text-base">Invalid Data</CardTitle>
+                                <TabsContent value="invalid">
+                                    <Card className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                                                        <AlertCircle className="h-5 w-5" />
+                                                        <CardTitle className="text-base">Invalid Data</CardTitle>
+                                                    </div>
+                                                    <CardDescription>Rows with missing or invalid data.</CardDescription>
                                                 </div>
-                                                <CardDescription>Rows with missing or invalid data.</CardDescription>
+                                                <div className="flex gap-2">
+                                                    {selectedRows.size > 0 && (
+                                                        <>
+                                                            <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
+                                                                {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                                                Force Create ({selectedRows.size})
+                                                            </Button>
+                                                            <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
+                                                                Dismiss ({selectedRows.size})
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {selectedRows.size > 0 && (
-                                                    <>
-                                                        <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
-                                                            {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                                                            Force Create ({selectedRows.size})
-                                                        </Button>
-                                                        <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
-                                                            Dismiss ({selectedRows.size})
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <EntriesTable
-                                            entries={result.skippedEntries.filter(e => e.reason.includes('Invalid') || e.reason.includes('Missing'))}
-                                            handleResolve={handleResolve}
-                                            resolvingId={resolvingId}
-                                            forceCreateOnly
-                                            selectedRows={selectedRows}
-                                            toggleRow={toggleRow}
-                                            toggleAll={toggleAll}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <EntriesTable
+                                                entries={result.skippedEntries.filter(e => e.reason.includes('Invalid') || e.reason.includes('Missing'))}
+                                                handleResolve={handleResolve}
+                                                resolvingId={resolvingId}
+                                                forceCreateOnly
+                                                selectedRows={selectedRows}
+                                                toggleRow={toggleRow}
+                                                toggleAll={toggleAll}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
 
-                            <TabsContent value="errors">
-                                <Card className="border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
-                                    <CardHeader className="pb-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-400">
-                                                    <AlertCircle className="h-5 w-5" />
-                                                    <CardTitle className="text-base">Other Errors</CardTitle>
+                                <TabsContent value="errors">
+                                    <Card className="border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-400">
+                                                        <AlertCircle className="h-5 w-5" />
+                                                        <CardTitle className="text-base">Other Errors</CardTitle>
+                                                    </div>
+                                                    <CardDescription>Unexpected errors during processing.</CardDescription>
                                                 </div>
-                                                <CardDescription>Unexpected errors during processing.</CardDescription>
+                                                <div className="flex gap-2">
+                                                    {selectedRows.size > 0 && (
+                                                        <>
+                                                            <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
+                                                                {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                                                Force Create ({selectedRows.size})
+                                                            </Button>
+                                                            <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
+                                                                Dismiss ({selectedRows.size})
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {selectedRows.size > 0 && (
-                                                    <>
-                                                        <Button size="sm" onClick={() => handleBulkResolve('create')} disabled={isBulkResolving}>
-                                                            {isBulkResolving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                                                            Force Create ({selectedRows.size})
-                                                        </Button>
-                                                        <Button size="sm" variant="ghost" onClick={() => handleBulkResolve('dismiss')} disabled={isBulkResolving}>
-                                                            Dismiss ({selectedRows.size})
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <EntriesTable
-                                            entries={result.skippedEntries.filter(e => !e.reason.includes('Duplicate') && !e.reason.includes('Invalid') && !e.reason.includes('Missing'))}
-                                            handleResolve={handleResolve}
-                                            resolvingId={resolvingId}
-                                            forceCreateOnly
-                                            selectedRows={selectedRows}
-                                            toggleRow={toggleRow}
-                                            toggleAll={toggleAll}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
-                        </Tabs>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <EntriesTable
+                                                entries={result.skippedEntries.filter(e => !e.reason.includes('Duplicate') && !e.reason.includes('Invalid') && !e.reason.includes('Missing'))}
+                                                handleResolve={handleResolve}
+                                                resolvingId={resolvingId}
+                                                forceCreateOnly
+                                                selectedRows={selectedRows}
+                                                toggleRow={toggleRow}
+                                                toggleAll={toggleAll}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                            </Tabs>
                         </div>
+                    )}
+                </div>
             )}
-        </div>
-    )
-}
 
-{/* Sync Members */ }
-<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-    <CardHeader>
-        <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                <Users className="h-6 w-6" />
-            </div>
-            <div>
-                <CardTitle>Sync Members</CardTitle>
-                <CardDescription>Import members from Church Database</CardDescription>
-            </div>
-        </div>
-    </CardHeader>
-    <CardContent className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-            <Select value={selectedSheet} onValueChange={setSelectedSheet}>
-                <SelectTrigger className="w-full sm:w-[250px]">
-                    <SelectValue placeholder="Select sheet" />
-                </SelectTrigger>
-                <SelectContent>
-                    {sheets.map((s) => (
-                        <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Button onClick={handleSyncMembers} disabled={isSyncing !== null} className="bg-blue-600 hover:bg-blue-700">
-                {isSyncing === 'members' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
-                    : <><RefreshCw className="h-4 w-4 mr-2" />Sync Members</>}
-            </Button>
-        </div>
-    </CardContent>
-</Card>
 
-{/* Sync Tithes */ }
-<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-    <CardHeader>
-        <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
-                <Wallet className="h-6 w-6" />
-            </div>
-            <div>
-                <CardTitle>Sync Tithes</CardTitle>
-                <CardDescription>Import tithe records from Tithes sheet</CardDescription>
-            </div>
-        </div>
-    </CardHeader>
-    <CardContent>
-        <Button onClick={handleSyncTithes} disabled={isSyncing !== null} className="bg-green-600 hover:bg-green-700">
-            {isSyncing === 'tithes' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
-                : <><RefreshCw className="h-4 w-4 mr-2" />Sync Tithes</>}
-        </Button>
-    </CardContent>
-</Card>
 
-{/* Sync Attendance */ }
-<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-    <CardHeader>
-        <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
-                <CalendarCheck className="h-6 w-6" />
-            </div>
-            <div>
-                <CardTitle>Sync Attendance</CardTitle>
-                <CardDescription>Import attendance records from Attendance sheet</CardDescription>
-            </div>
-        </div>
-    </CardHeader>
-    <CardContent>
-        <Button onClick={handleSyncAttendance} disabled={isSyncing !== null} className="bg-amber-600 hover:bg-amber-700">
-            {isSyncing === 'attendance' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
-                : <><RefreshCw className="h-4 w-4 mr-2" />Sync Attendance</>}
-        </Button>
-    </CardContent>
-</Card>
+            {/* Sync Members */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                            <Users className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <CardTitle>Sync Members</CardTitle>
+                            <CardDescription>Import members from Church Database</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Select value={selectedSheet} onValueChange={setSelectedSheet}>
+                            <SelectTrigger className="w-full sm:w-[250px]">
+                                <SelectValue placeholder="Select sheet" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {sheets.map((s) => (
+                                    <SelectItem key={s.title} value={s.title}>{s.title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button onClick={handleSyncMembers} disabled={isSyncing !== null} className="bg-blue-600 hover:bg-blue-700">
+                            {isSyncing === 'members' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                                : <><RefreshCw className="h-4 w-4 mr-2" />Sync Members</>}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
-{/* Available Sheets */ }
-<Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
-    <CardHeader>
-        <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-slate-400" />
-            <CardTitle className="text-base">Available Sheets</CardTitle>
+            {/* Sync Tithes */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                            <Wallet className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <CardTitle>Sync Tithes</CardTitle>
+                            <CardDescription>Import tithe records from Tithes sheet</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleSyncTithes} disabled={isSyncing !== null} className="bg-green-600 hover:bg-green-700">
+                        {isSyncing === 'tithes' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                            : <><RefreshCw className="h-4 w-4 mr-2" />Sync Tithes</>}
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {/* Sync Attendance */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                            <CalendarCheck className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <CardTitle>Sync Attendance</CardTitle>
+                            <CardDescription>Import attendance records from Attendance sheet</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleSyncAttendance} disabled={isSyncing !== null} className="bg-amber-600 hover:bg-amber-700">
+                        {isSyncing === 'attendance' ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
+                            : <><RefreshCw className="h-4 w-4 mr-2" />Sync Attendance</>}
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {/* Available Sheets */}
+            <Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-5 w-5 text-slate-400" />
+                        <CardTitle className="text-base">Available Sheets</CardTitle>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                        {sheets.length === 0 ? (
+                            <p className="text-sm text-slate-500">Loading sheets...</p>
+                        ) : (
+                            sheets.map((s) => (
+                                <span key={s.title} className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-sm border">
+                                    {s.title}
+                                </span>
+                            ))
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
-    </CardHeader>
-    <CardContent>
-        <div className="flex flex-wrap gap-2">
-            {sheets.length === 0 ? (
-                <p className="text-sm text-slate-500">Loading sheets...</p>
-            ) : (
-                sheets.map((s) => (
-                    <span key={s.title} className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-sm border">
-                        {s.title}
-                    </span>
-                ))
-            )}
-        </div>
-    </CardContent>
-</Card>
-        </div >
     )
 }
 
@@ -569,3 +572,4 @@ function EntriesTable({
         </div>
     )
 }
+
