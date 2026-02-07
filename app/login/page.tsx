@@ -8,16 +8,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { login } from '@/app/actions/auth'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
     const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
-    const router = useRouter()
+    const [showPassword, setShowPassword] = useState(false)
 
-    async function handleSubmit(formData: FormData) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault()
         setIsLoading(true)
         setError(null)
 
+        const formData = new FormData(event.currentTarget)
         const result = await login(formData)
 
         if (result?.error) {
@@ -58,7 +61,7 @@ export default function LoginPage() {
                 </CardHeader>
 
                 <CardContent>
-                    <form action={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         {error && (
                             <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-sm text-red-400">
                                 {error}
@@ -80,25 +83,41 @@ export default function LoginPage() {
                             />
                         </div>
 
+
+
                         <div className="space-y-2">
                             <Label htmlFor="password" className="text-slate-300">
                                 Password
                             </Label>
-                            <Input
-                                id="password"
-                                name="password"
-                                type="password"
-                                placeholder="••••••••"
-                                required
-                                disabled={isLoading}
-                                className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    required
+                                    disabled={isLoading}
+                                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20 pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white focus:outline-none transition-colors"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         <Button
                             type="submit"
                             disabled={isLoading}
-                        // className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/20"
+                            className="w-full"
                         >
                             {isLoading ? (
                                 <div className="flex items-center gap-2">
