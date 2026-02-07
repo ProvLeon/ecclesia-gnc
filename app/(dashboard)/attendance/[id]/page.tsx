@@ -8,17 +8,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowLeft, Users, Plus, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { AttendanceRecorder } from './attendance-recorder'
+import { getCurrentUserWithRole, getScopedMemberIds } from '@/lib/auth/proxy'
+import { redirect } from 'next/navigation'
 
 interface PageProps {
     params: Promise<{ id: string }>
 }
 
 export default async function ServiceAttendancePage({ params }: PageProps) {
+    const user = await getCurrentUserWithRole()
+    if (!user) redirect('/login')
+
+    const scopedMemberIds = await getScopedMemberIds(user.id, user.role)
+
     const { id } = await params
     const [service, attendees, allMembers] = await Promise.all([
         getService(id),
         getServiceAttendance(id),
-        getMembersForAttendance(),
+        getMembersForAttendance(scopedMemberIds),
     ])
 
     if (!service) {

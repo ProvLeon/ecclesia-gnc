@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { members } from '@/lib/db/schema'
-import { eq, ilike, or, and, desc, asc, count, SQLWrapper } from 'drizzle-orm'
+import { eq, ilike, or, and, desc, asc, count, inArray, SQLWrapper } from 'drizzle-orm'
+import { getCurrentUserWithRole, getScopedMemberIds } from '@/lib/auth/proxy'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +16,38 @@ export async function GET(request: NextRequest) {
 
     const offset = (page - 1) * pageSize
 
+    // Get current user and role for scoping
+    const user = await getCurrentUserWithRole()
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get scoped member IDs (null = full access)
+    const scopedMemberIds = await getScopedMemberIds(user.id, user.role)
+
     // Build where conditions
     const conditions: (SQLWrapper | undefined)[] = []
+
+    // Apply role-based scoping
+    if (scopedMemberIds !== null) {
+      if (scopedMemberIds.length === 0) {
+        // No assigned members - return empty result
+        return NextResponse.json({
+          success: true,
+          data: [],
+          pagination: {
+            page,
+            pageSize,
+            total: 0,
+            totalPages: 0,
+          },
+        })
+      }
+      conditions.push(inArray(members.id, scopedMemberIds))
+    }
 
     if (search) {
       conditions.push(
@@ -75,3 +106,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

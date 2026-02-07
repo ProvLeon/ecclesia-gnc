@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { users, members } from '@/lib/db/schema'
+import { users, members, shepherds } from '@/lib/db/schema'
 import { eq, desc, sql, asc, and, ilike, or } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
@@ -117,7 +117,7 @@ export async function createUser(data: {
         // 3. Create Member Profile
         const memberId = await generateMemberId()
 
-        await db.insert(members).values({
+        const [newMember] = await db.insert(members).values({
             userId: newUser.id,
             memberId: memberId,
             firstName: data.firstName,
@@ -126,9 +126,19 @@ export async function createUser(data: {
             phonePrimary: data.phone || '',
             memberStatus: 'active',
             joinDate: new Date().toISOString(),
-        })
+        }).returning()
+
+        // 4. If role is shepherd, create shepherd record
+        if (data.role === 'shepherd') {
+            await db.insert(shepherds).values({
+                memberId: newMember.id,
+                isActive: true,
+                assignedDate: new Date().toISOString().split('T')[0],
+            })
+        }
 
         revalidatePath('/settings/users')
+        revalidatePath('/shepherding')
         return { success: true, user: newUser }
     } catch (error) {
         console.error('Error creating user:', error)
@@ -137,13 +147,70 @@ export async function createUser(data: {
 }
 
 export async function updateUserRole(id: string, role: 'super_admin' | 'pastor' | 'admin' | 'treasurer' | 'dept_leader' | 'shepherd' | 'member') {
+    // Get current user info
+    const [currentUser] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1)
+
+    if (!currentUser) {
+        return { success: false, error: 'User not found' }
+    }
+
+    const oldRole = currentUser.role
+
+    // Update database user
     const [updated] = await db
         .update(users)
         .set({ role, updatedAt: new Date() })
         .where(eq(users.id, id))
         .returning()
 
+    // Handle shepherd role sync
+    if (oldRole !== role) {
+        // Get the member record for this user
+        const [memberRecord] = await db
+            .select({ id: members.id })
+            .from(members)
+            .where(eq(members.userId, id))
+            .limit(1)
+
+        if (memberRecord) {
+            // If changing TO shepherd, create shepherd record
+            if (role === 'shepherd') {
+                // Check if shepherd record already exists
+                const [existingShepherd] = await db
+                    .select({ id: shepherds.id })
+                    .from(shepherds)
+                    .where(eq(shepherds.memberId, memberRecord.id))
+                    .limit(1)
+
+                if (existingShepherd) {
+                    // Reactivate existing shepherd record
+                    await db.update(shepherds)
+                        .set({ isActive: true })
+                        .where(eq(shepherds.id, existingShepherd.id))
+                } else {
+                    // Create new shepherd record
+                    await db.insert(shepherds).values({
+                        memberId: memberRecord.id,
+                        isActive: true,
+                        assignedDate: new Date().toISOString().split('T')[0],
+                    })
+                }
+            }
+            // If changing FROM shepherd, deactivate shepherd record
+            else if (oldRole === 'shepherd') {
+                await db.update(shepherds)
+                    .set({ isActive: false })
+                    .where(eq(shepherds.memberId, memberRecord.id))
+            }
+        }
+    }
+
     revalidatePath('/settings/users')
+    revalidatePath('/shepherding')
     return { success: true, user: updated }
 }
 

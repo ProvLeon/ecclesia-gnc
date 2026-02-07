@@ -77,7 +77,7 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
 
                 const memberId = `GNC-${String(nextNumber).padStart(4, '0')}`
 
-                await db.insert(members).values({
+                const [newMember] = await db.insert(members).values({
                     memberId,
                     firstName,
                     lastName,
@@ -90,7 +90,27 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                     joinDate: new Date().toISOString().split('T')[0],
                     isBaptized: parsed.baptismStatus?.toLowerCase().includes('yes') ||
                         parsed.baptismStatus?.toLowerCase().includes('baptized'),
-                })
+                }).returning()
+
+                // Auto-link to department if specified in sheet
+                if (parsed.department && parsed.department.trim()) {
+                    try {
+                        const { findOrCreateDepartment } = await import('./departments')
+                        const { memberDepartments } = await import('@/lib/db/schema')
+
+                        const deptId = await findOrCreateDepartment(parsed.department)
+
+                        await db.insert(memberDepartments).values({
+                            memberId: newMember.id,
+                            departmentId: deptId,
+                            isActive: true,
+                            joinDate: new Date().toISOString().split('T')[0],
+                        }).onConflictDoNothing()
+                    } catch (deptError) {
+                        console.error('Failed to link department:', deptError)
+                        // Continue even if department linking fails
+                    }
+                }
 
                 imported++
                 nextNumber++
@@ -100,6 +120,7 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
         }
 
         revalidatePath('/members')
+        revalidatePath('/departments')
         return { success: true, imported, skipped, total: dataRows.length }
     } catch (error) {
         return { success: false, error: (error as Error).message, imported: 0 }

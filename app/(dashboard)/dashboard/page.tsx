@@ -4,60 +4,116 @@ import { Users, Wallet, CalendarCheck, TrendingUp, Heart, Building2, MessageSqua
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { members, tithes, services, attendance, followUps } from '@/lib/db/schema'
-import { eq, sql, gte, desc } from 'drizzle-orm'
+import { eq, sql, gte, desc, inArray, and } from 'drizzle-orm'
+import { getCurrentUserWithRole, getScopedMemberIds } from '@/lib/auth/proxy'
+import { hasPermission } from '@/lib/constants/roles'
+import { redirect } from 'next/navigation'
 
-async function getDashboardStats() {
+async function getDashboardStats(scopedMemberIds: string[] | null) {
   const today = new Date()
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
   const lastSunday = new Date(today)
   lastSunday.setDate(today.getDate() - today.getDay())
   const lastSundayStr = lastSunday.toISOString().split('T')[0]
 
-  const [totalMembers] = await db.select({ count: sql<number>`count(*)` }).from(members).where(eq(members.memberStatus, 'active'))
-  const [monthTithes] = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)` }).from(tithes).where(gte(tithes.paymentDate, startOfMonth))
+  // Build member filter condition
+  const memberFilter = scopedMemberIds !== null && scopedMemberIds.length > 0
+    ? and(eq(members.memberStatus, 'active'), inArray(members.id, scopedMemberIds))
+    : eq(members.memberStatus, 'active')
+
+  const [totalMembers] = await db.select({ count: sql<number>`count(*)` }).from(members).where(memberFilter)
+
+  // For tithes - filter by scoped members if applicable
+  let monthTithesResult
+  if (scopedMemberIds !== null && scopedMemberIds.length > 0) {
+    [monthTithesResult] = await db
+      .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+      .from(tithes)
+      .where(and(gte(tithes.paymentDate, startOfMonth), inArray(tithes.memberId, scopedMemberIds)))
+  } else {
+    [monthTithesResult] = await db
+      .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+      .from(tithes)
+      .where(gte(tithes.paymentDate, startOfMonth))
+  }
 
   const [lastService] = await db.select({ id: services.id }).from(services).where(eq(services.serviceDate, lastSundayStr)).limit(1)
   let sundayAttendance = 0
   if (lastService) {
-    const [att] = await db.select({ count: sql<number>`count(*)` }).from(attendance).where(eq(attendance.serviceId, lastService.id))
-    sundayAttendance = Number(att?.count || 0)
+    if (scopedMemberIds !== null && scopedMemberIds.length > 0) {
+      const [att] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(attendance)
+        .where(and(eq(attendance.serviceId, lastService.id), inArray(attendance.memberId, scopedMemberIds)))
+      sundayAttendance = Number(att?.count || 0)
+    } else {
+      const [att] = await db.select({ count: sql<number>`count(*)` }).from(attendance).where(eq(attendance.serviceId, lastService.id))
+      sundayAttendance = Number(att?.count || 0)
+    }
   }
 
-  const [newMembers] = await db.select({ count: sql<number>`count(*)` }).from(members).where(gte(members.joinDate, startOfMonth))
-  const [pendingFollowups] = await db.select({ count: sql<number>`count(*)` }).from(followUps).where(eq(followUps.status, 'pending'))
+  // New members filter
+  let newMembersResult
+  if (scopedMemberIds !== null && scopedMemberIds.length > 0) {
+    [newMembersResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(members)
+      .where(and(gte(members.joinDate, startOfMonth), inArray(members.id, scopedMemberIds)))
+  } else {
+    [newMembersResult] = await db.select({ count: sql<number>`count(*)` }).from(members).where(gte(members.joinDate, startOfMonth))
+  }
+
+  // Pending follow-ups - for shepherds, filter by their assignments
+  let pendingFollowupsResult
+  if (scopedMemberIds !== null && scopedMemberIds.length > 0) {
+    [pendingFollowupsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(followUps)
+      .where(and(eq(followUps.status, 'pending'), inArray(followUps.memberId, scopedMemberIds)))
+  } else {
+    [pendingFollowupsResult] = await db.select({ count: sql<number>`count(*)` }).from(followUps).where(eq(followUps.status, 'pending'))
+  }
 
   return {
     totalMembers: Number(totalMembers?.count || 0),
-    monthTithes: Number(monthTithes?.total || 0),
+    monthTithes: Number(monthTithesResult?.total || 0),
     sundayAttendance,
-    newMembers: Number(newMembers?.count || 0),
-    pendingFollowups: Number(pendingFollowups?.count || 0),
+    newMembers: Number(newMembersResult?.count || 0),
+    pendingFollowups: Number(pendingFollowupsResult?.count || 0),
   }
 }
 
-async function getRecentMembers() {
-  return db
+async function getRecentMembers(scopedMemberIds: string[] | null) {
+  const baseQuery = db
     .select({
       id: members.id,
       name: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
       joinDate: members.joinDate,
     })
     .from(members)
+
+  if (scopedMemberIds !== null && scopedMemberIds.length > 0) {
+    return baseQuery
+      .where(inArray(members.id, scopedMemberIds))
+      .orderBy(desc(members.createdAt))
+      .limit(5)
+  }
+
+  return baseQuery
     .orderBy(desc(members.createdAt))
     .limit(5)
 }
-
-import { getCurrentUserWithRole } from '@/lib/auth/proxy'
-import { hasPermission } from '@/lib/constants/roles'
-import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
   const user = await getCurrentUserWithRole()
   if (!user) redirect('/login')
 
+  // Get scoped member IDs for role-based filtering
+  const scopedMemberIds = await getScopedMemberIds(user.id, user.role)
+
   const [stats, recentMembers] = await Promise.all([
-    getDashboardStats(),
-    hasPermission(user.role, 'members:view') ? getRecentMembers() : Promise.resolve([]),
+    getDashboardStats(scopedMemberIds),
+    hasPermission(user.role, 'members:view') ? getRecentMembers(scopedMemberIds) : Promise.resolve([]),
   ])
 
   // Permissions checks

@@ -167,38 +167,50 @@ export async function sendBroadcast(data: {
     return { success: false, error: 'SMS API not configured' }
   }
 
-  // Get recipients based on type
-  const conditions = []
+  let recipientList: { id: string; phone: string | null }[] = []
 
-  // For department filtering, we need to join with department_members table
-  // Assuming we have that relationship set up. If not, we might need to adjust.
-  // For now, let's implement the status filtering which is straightforward.
-
+  // Department filtering - join with member_departments table
   if (type === 'department' && departmentId) {
-    // TODO: Implement department filtering
+    const { memberDepartments } = await import('@/lib/db/schema')
+
+    recipientList = await db
+      .select({ id: members.id, phone: members.phonePrimary })
+      .from(members)
+      .innerJoin(memberDepartments, and(
+        eq(memberDepartments.memberId, members.id),
+        eq(memberDepartments.departmentId, departmentId),
+        eq(memberDepartments.isActive, true)
+      ))
+      .where(and(
+        sql`${members.phonePrimary} IS NOT NULL`,
+        sql`length(${members.phonePrimary}) >= 10`
+      ))
   } else if (type === 'status' && memberStatus) {
-    conditions.push(eq(members.memberStatus, memberStatus as 'active' | 'inactive' | 'visitor' | 'new_convert'))
+    recipientList = await db
+      .select({ id: members.id, phone: members.phonePrimary })
+      .from(members)
+      .where(and(
+        eq(members.memberStatus, memberStatus as 'active' | 'inactive' | 'visitor' | 'new_convert'),
+        sql`${members.phonePrimary} IS NOT NULL`,
+        sql`length(${members.phonePrimary}) >= 10`
+      ))
   } else if (type === 'all') {
-    conditions.push(eq(members.memberStatus, 'active'))
+    recipientList = await db
+      .select({ id: members.id, phone: members.phonePrimary })
+      .from(members)
+      .where(and(
+        eq(members.memberStatus, 'active'),
+        sql`${members.phonePrimary} IS NOT NULL`,
+        sql`length(${members.phonePrimary}) >= 10`
+      ))
   }
 
-  const query = db
-    .select({ id: members.id, phone: members.phonePrimary })
-    .from(members)
-    .where(
-      and(
-        sql`${members.phonePrimary} IS NOT NULL`,
-        sql`length(${members.phonePrimary}) >= 10`,
-        ...conditions
-      )
-    )
-
-  const recipientList = await query
-
-  const validRecipients = recipientList.map(r => ({
-    memberId: r.id,
-    phone: r.phone!,
-  }))
+  const validRecipients = recipientList
+    .filter(r => r.phone)
+    .map(r => ({
+      memberId: r.id,
+      phone: r.phone!,
+    }))
 
   if (validRecipients.length === 0) {
     return { success: false, error: 'No recipients with valid phone numbers found matching criteria' }
@@ -207,6 +219,26 @@ export async function sendBroadcast(data: {
   // Use existing sendSMS function
   return sendSMS({ recipients: validRecipients, message })
 }
+
+/**
+ * Get user's broadcast scope for role-based filtering.
+ * For Dept Leaders: returns their department ID
+ * For Admins: returns null (full access)
+ */
+export async function getUserBroadcastScope() {
+  const { getCurrentUserWithRole, getDeptLeaderDepartmentId } = await import('@/lib/auth/proxy')
+
+  const user = await getCurrentUserWithRole()
+  if (!user) return { role: null, departmentId: null }
+
+  if (user.role === 'dept_leader') {
+    const deptId = await getDeptLeaderDepartmentId(user.id)
+    return { role: user.role, departmentId: deptId }
+  }
+
+  return { role: user.role, departmentId: null }
+}
+
 
 // ============================================================================
 // SMS TEMPLATES

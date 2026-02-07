@@ -29,6 +29,7 @@ import { DepartmentFormSheet } from '@/components/modals/department-form-sheet'
 import { MemberDetailsSheet } from '@/components/modals/member-details-sheet'
 import { MemberFormSheet } from '@/components/modals/member-form-sheet'
 import { AddDepartmentMemberSheet } from '@/components/modals/add-department-member-sheet'
+import { RegisterNewMemberSheet } from '@/components/modals/register-new-member-sheet'
 import { removeMemberFromDepartment } from '@/app/actions/department-members'
 import { toast } from 'sonner' // Assuming toast is available, if not we'll use a simple alert or just router.refresh
 
@@ -128,8 +129,12 @@ export function DepartmentDetailClient({ department, members }: DepartmentDetail
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <RegisterNewMemberSheet
+                        departmentId={department.id}
+                        departmentName={department.name}
+                    />
                     <Button variant="outline" onClick={() => setAddMemberSheetOpen(true)}>
-                        <UserPlus className="h-4 w-4 mr-2" />Add Member
+                        <UserPlus className="h-4 w-4 mr-2" />Add Existing Member
                     </Button>
                     <Button variant="outline" onClick={() => setEditSheetOpen(true)}>
                         <Edit className="h-4 w-4 mr-2" />Edit

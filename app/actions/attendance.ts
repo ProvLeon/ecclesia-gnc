@@ -164,7 +164,28 @@ export async function getAttendanceStats() {
     }
 }
 
-export async function getMembersForAttendance(search?: string) {
+export async function getMembersForAttendance(scopedMemberIds?: string[] | null) {
+    // Base query
+    const baseConditions = [eq(members.memberStatus, 'active')]
+
+    // If scoped, add member ID filter
+    if (scopedMemberIds && scopedMemberIds.length > 0) {
+        const { inArray } = await import('drizzle-orm')
+        const results = await db
+            .select({
+                id: members.id,
+                memberId: members.memberId,
+                name: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
+                phone: members.phonePrimary,
+            })
+            .from(members)
+            .where(and(eq(members.memberStatus, 'active'), inArray(members.id, scopedMemberIds)))
+            .orderBy(members.firstName)
+            .limit(100)
+        return results
+    }
+
+    // Full access
     const results = await db
         .select({
             id: members.id,
