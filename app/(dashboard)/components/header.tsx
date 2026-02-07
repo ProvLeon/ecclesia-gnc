@@ -24,9 +24,11 @@ interface HeaderProps {
 export function Header({ user }: HeaderProps) {
     const router = useRouter()
 
-    const initials = user.email
-        ? user.email.substring(0, 2).toUpperCase()
-        : 'US'
+    const name = user.user_metadata?.full_name || user.user_metadata?.first_name
+    const displayName = name || user.email?.split('@')[0] || 'User'
+    const initials = name
+        ? name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+        : user.email?.substring(0, 2).toUpperCase() || 'US'
 
     async function handleLogout() {
         await logout()
@@ -58,7 +60,7 @@ export function Header({ user }: HeaderProps) {
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                                 <Avatar className="h-9 w-9">
-                                    <AvatarImage src={user.user_metadata?.avatar_url || ''} alt={user.email || ''} />
+                                    <AvatarImage src={user.user_metadata?.avatar_url || ''} alt={displayName} className="object-cover" />
                                     <AvatarFallback className="bg-blue-600 text-white text-sm">
                                         {initials}
                                     </AvatarFallback>
@@ -68,7 +70,7 @@ export function Header({ user }: HeaderProps) {
                         <DropdownMenuContent className="w-56" align="end">
                             <DropdownMenuLabel>
                                 <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium">Account</p>
+                                    <p className="text-sm font-medium">{displayName}</p>
                                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                                     <p className="text-xs text-slate-400 capitalize">{user.role.replace('_', ' ')}</p>
                                 </div>

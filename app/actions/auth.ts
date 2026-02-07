@@ -41,19 +41,24 @@ export async function getUser() {
     // Sync user to database and fetch member details
     await syncAuthUserToDatabase(user.id, user.email!)
 
-    // Fetch member profile to get photo
+    // Fetch member profile to get photo and names
     const member = await db.query.members.findFirst({
       where: eq(members.userId, user.id),
       columns: {
+        firstName: true,
+        lastName: true,
         photoUrl: true
       }
     })
 
-    if (member?.photoUrl) {
-      // Attach member photo to user metadata for easier access in UI
+    if (member) {
+      // Attach member details to user metadata for identification in UI
       user.user_metadata = {
         ...user.user_metadata,
-        avatar_url: member.photoUrl
+        avatar_url: member.photoUrl || '',
+        full_name: `${member.firstName} ${member.lastName}`,
+        first_name: member.firstName,
+        last_name: member.lastName
       }
     }
   }

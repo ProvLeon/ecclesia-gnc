@@ -248,6 +248,61 @@ export async function deleteMember(id: string) {
   }
 }
 
+export async function bulkDeleteMembers(ids: string[]) {
+  try {
+    const supabase = createAdminClient()
+    let successCount = 0
+    let failCount = 0
+
+    // We process sequentially or in parallel? Parallel is faster but might hit rate limits if too many.
+    // For now, simple Promise.all is fine for reasonable batch sizes.
+    await Promise.all(ids.map(async (id) => {
+      try {
+        // 1. Get member details
+        const [member] = await db
+          .select({
+            userId: members.userId,
+            photoUrl: members.photoUrl
+          })
+          .from(members)
+          .where(eq(members.id, id))
+          .limit(1)
+
+        if (!member) return
+
+        // 2. Delete photo
+        if (member.photoUrl) {
+          const fileName = member.photoUrl.split('/').pop()
+          if (fileName) {
+            await supabase.storage
+              .from('member-photos')
+              .remove([fileName])
+          }
+        }
+
+        // 3. Delete auth user
+        if (member.userId) {
+          await supabase.auth.admin.deleteUser(member.userId)
+          await db.delete(users).where(eq(users.id, member.userId))
+        }
+
+        // 4. Delete member record
+        await db.delete(members).where(eq(members.id, id))
+        successCount++
+      } catch (err) {
+        console.error(`Failed to delete member ${id}:`, err)
+        failCount++
+      }
+    }))
+
+    revalidatePath('/members')
+    return { success: true, count: successCount, failed: failCount }
+  } catch (error) {
+    console.error('Error in bulk delete:', error)
+    return { success: false, error: 'Failed to perform bulk delete' }
+  }
+}
+
 // Define input type
 type CreateMemberInput = Omit<typeof members.$inferInsert, 'id' | 'memberId' | 'createdAt' | 'updatedAt'> & {
   photoUrl?: string | null

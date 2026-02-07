@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Search, Users, UserCheck, UserX, UserPlus, Phone, Mail, Calendar, ArrowRight, Filter, Download } from 'lucide-react'
+import { Plus, Search, Users, UserCheck, UserX, UserPlus, Phone, Mail, Calendar, ArrowRight, Filter, Download, Trash2, X } from 'lucide-react'
 import { SkeletonTable, SkeletonStat } from '@/components/ui/skeleton'
 import { useNotification } from '@/hooks'
 import { AddMemberButton } from './add-member-button'
@@ -22,6 +22,9 @@ import { format } from 'date-fns'
 import { MemberDetailsSheet } from '@/components/modals/member-details-sheet'
 import { MemberFormSheet } from '@/components/modals/member-form-sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Checkbox } from '@/components/ui/checkbox'
+import { bulkDeleteMembers } from '@/app/actions/members'
+import { useSWRConfig } from 'swr'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -95,6 +98,7 @@ export function MembersContent() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const { error: notifyError } = useNotification()
+  const { mutate } = useSWRConfig()
 
   // Debounce search
   useEffect(() => {
@@ -148,6 +152,9 @@ export function MembersContent() {
     return statusConfig[key] || statusConfig.active
   }
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const handleMemberClick = (memberId: string) => {
     setSelectedMemberId(memberId)
     setDetailsOpen(true)
@@ -159,6 +166,46 @@ export function MembersContent() {
     setSelectedMemberData(typeof member === 'object' ? member : null)
     // Small delay to ensure clean transition
     setTimeout(() => setEditOpen(true), 50)
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(members.map(m => m.id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id])
+    } else {
+      setSelectedIds(prev => prev.filter(item => item !== id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} members? This action is permanent and cannot be undone.`)) return
+
+    setIsDeleting(true)
+    try {
+      const result = await bulkDeleteMembers(selectedIds)
+      // @ts-ignore
+      if (result.success) {
+        notifyError('Success', `Successfully deleted ${result.count} members`)
+        setSelectedIds([])
+        mutate(membersUrl) // Re-fetch data
+        mutate('/api/members/stats') // Refresh stats
+      } else {
+        // @ts-ignore
+        notifyError('Error', result.error || 'Failed to delete some members')
+      }
+    } catch (error) {
+      console.error(error)
+      notifyError('Error', 'An unexpected error occurred')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -203,22 +250,49 @@ export function MembersContent() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-              <Select value={status} onValueChange={(value) => {
-                setStatus(value)
-                setPage(1)
-              }}>
-                <SelectTrigger className="w-full sm:w-[200px] bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="visitor">Visitor</SelectItem>
-                  <SelectItem value="new_convert">New Convert</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Select value={status} onValueChange={(value) => {
+                  setStatus(value)
+                  setPage(1)
+                }}>
+                  <SelectTrigger className="w-full sm:w-[200px] bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 h-10">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="visitor">Visitor</SelectItem>
+                    <SelectItem value="new_convert">New Convert</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {selectedIds.length > 0 && (
+                  <>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                      disabled={isDeleting}
+                      className="h-10 animate-in fade-in zoom-in duration-200"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete ({selectedIds.length})
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedIds([])}
+                      disabled={isDeleting}
+                      className="h-10 animate-in fade-in zoom-in duration-200 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Clear
+                    </Button>
+                  </>
+                )}
+              </div>
 
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 h-10">
@@ -262,6 +336,13 @@ export function MembersContent() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                      <th className="px-6 py-3 w-[50px]">
+                        <Checkbox
+                          checked={members.length > 0 && selectedIds.length === members.length}
+                          onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                          aria-label="Select all"
+                        />
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Member</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Contact</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Status</th>
@@ -272,12 +353,20 @@ export function MembersContent() {
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                     {members.map((member) => {
                       const statusConfig = getStatusConfig(member.memberStatus)
+                      const isSelected = selectedIds.includes(member.id)
                       return (
                         <tr
                           key={member.id}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer"
+                          className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : ''}`}
                           onClick={() => handleMemberClick(member.id)}
                         >
+                          <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => handleSelectRow(member.id, !!checked)}
+                              aria-label={`Select ${member.firstName}`}
+                            />
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 dark:from-primary/40 dark:to-accent/40 flex items-center justify-center font-semibold text-sm text-primary dark:text-accent flex-shrink-0">

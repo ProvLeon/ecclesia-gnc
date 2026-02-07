@@ -30,13 +30,29 @@ export default async function ProfileSettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl font-bold text-slate-500">
-                            {user?.email?.substring(0, 2).toUpperCase()}
-                        </div>
+                        {user?.user_metadata?.avatar_url ? (
+                            <img
+                                src={user.user_metadata.avatar_url}
+                                alt="Profile"
+                                className="h-16 w-16 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                            />
+                        ) : (
+                            <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl font-bold text-slate-500">
+                                {user?.user_metadata?.full_name
+                                    ? user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+                                    : user?.email?.substring(0, 2).toUpperCase()}
+                            </div>
+                        )}
                         <div>
-                            <p className="font-medium text-slate-900 dark:text-white">Current Session</p>
-                            <p className="text-sm text-slate-500">Logged in as {user?.email}</p>
+                            <p className="font-medium text-slate-900 dark:text-white text-lg">
+                                {user?.user_metadata?.full_name || 'User'}
+                            </p>
+                            <p className="text-sm text-slate-500">{user?.email}</p>
                         </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Full Name</Label>
+                        <Input value={user?.user_metadata?.full_name || ''} disabled className="bg-slate-50 dark:bg-slate-900/50" />
                     </div>
                     <div className="space-y-2">
                         <Label>Email Address</Label>

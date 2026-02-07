@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { users, members } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import {
     UserRole,
@@ -22,13 +22,33 @@ export async function getCurrentUserWithRole() {
         return null
     }
 
-    // Fetch role from database
+    // Fetch role and member details from database
     try {
         const [dbUser] = await db
             .select({ role: users.role })
             .from(users)
             .where(eq(users.id, user.id))
             .limit(1)
+
+        // Fetch member profile for UI display (photo, name)
+        const member = await db.query.members.findFirst({
+            where: eq(members.userId, user.id),
+            columns: {
+                firstName: true,
+                lastName: true,
+                photoUrl: true
+            }
+        })
+
+        if (member) {
+            user.user_metadata = {
+                ...user.user_metadata,
+                avatar_url: member.photoUrl || '',
+                full_name: `${member.firstName} ${member.lastName}`,
+                first_name: member.firstName,
+                last_name: member.lastName
+            }
+        }
 
         return {
             ...user,
