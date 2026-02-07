@@ -112,7 +112,11 @@ const colorClasses = {
   },
 }
 
-export default function SettingsPage() {
+import { protectPage } from '@/lib/auth/proxy'
+
+export default async function SettingsPage() {
+  await protectPage('settings:view')
+
   return (
     <div className="space-y-8">
       {/* Header Section */}

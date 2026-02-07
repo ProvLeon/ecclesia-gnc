@@ -20,6 +20,21 @@ import {
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { UserRole, hasPermission, Permission } from '@/lib/constants/roles'
+
+// Map navigation items to required permission
+const navPermissions: Record<string, Permission> = {
+  'Dashboard': 'members:view_own', // Basic access
+  'Members': 'members:view',
+  'Finance': 'finances:view',
+  'Attendance': 'attendance:view',
+  'Events': 'events:create',
+  'Shepherding': 'shepherding:view',
+  'Messages': 'members:view_own', // All members can message
+  'Departments': 'members:view',
+  'Reports': 'reports:view',
+  'Settings': 'settings:view',
+}
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -55,8 +70,21 @@ function NavItem({ item, isActive }: { item: typeof navigation[0]; isActive: boo
   )
 }
 
-function SidebarContent() {
+function SidebarContent({ userRole }: { userRole: UserRole }) {
   const pathname = usePathname()
+
+  // Filter navigation items based on role permissions
+  const visibleNavigation = navigation.filter(item => {
+    const requiredPermission = navPermissions[item.name]
+    if (!requiredPermission) return true // Show if no specific permission required
+    return hasPermission(userRole, requiredPermission)
+  })
+
+  const visibleBottomNav = bottomNav.filter(item => {
+    const requiredPermission = navPermissions[item.name]
+    if (!requiredPermission) return true
+    return hasPermission(userRole, requiredPermission)
+  })
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
@@ -84,7 +112,7 @@ function SidebarContent() {
 
       {/* Main Navigation */}
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-        {navigation.map((item) => (
+        {visibleNavigation.map((item) => (
           <NavItem
             key={item.name}
             item={item}
@@ -95,7 +123,7 @@ function SidebarContent() {
 
       {/* Bottom Navigation */}
       <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
-        {bottomNav.map((item) => (
+        {visibleBottomNav.map((item) => (
           <NavItem
             key={item.name}
             item={item}
@@ -107,7 +135,11 @@ function SidebarContent() {
   )
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  userRole?: UserRole // Optional because it might load before role is fetched? No, layout ensures it.
+}
+
+export function Sidebar({ userRole = 'member' }: SidebarProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -115,20 +147,20 @@ export function Sidebar() {
       {/* Mobile Sidebar */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="p-0 w-72">
-          <SidebarContent />
+          <SidebarContent userRole={userRole} />
         </SheetContent>
       </Sheet>
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72">
-        <SidebarContent />
+        <SidebarContent userRole={userRole} />
       </div>
     </>
   )
 }
 
 // Export for mobile menu trigger
-export function MobileSidebarTrigger() {
+export function MobileSidebarTrigger({ userRole }: { userRole: UserRole }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -139,7 +171,7 @@ export function MobileSidebarTrigger() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-72">
-        <SidebarContent />
+        <SidebarContent userRole={userRole} />
       </SheetContent>
     </Sheet>
   )

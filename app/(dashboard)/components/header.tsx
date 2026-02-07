@@ -15,9 +15,10 @@ import {
 import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { MobileSidebarTrigger } from './sidebar'
+import { UserRole } from '@/lib/constants/roles'
 
 interface HeaderProps {
-    user: User
+    user: User & { role: UserRole }
 }
 
 export function Header({ user }: HeaderProps) {
@@ -36,7 +37,7 @@ export function Header({ user }: HeaderProps) {
             <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
                 {/* Left side - Mobile menu and page title */}
                 <div className="flex items-center gap-4">
-                    <MobileSidebarTrigger />
+                    <MobileSidebarTrigger userRole={user.role} />
                     <div className="hidden sm:block">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                             Good News Centre AG
@@ -69,6 +70,7 @@ export function Header({ user }: HeaderProps) {
                                 <div className="flex flex-col space-y-1">
                                     <p className="text-sm font-medium">Account</p>
                                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                    <p className="text-xs text-slate-400 capitalize">{user.role.replace('_', ' ')}</p>
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />

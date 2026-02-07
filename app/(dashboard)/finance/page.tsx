@@ -6,8 +6,11 @@ import Link from 'next/link'
 import { getFinanceStats, getTithes, getOfferings, getExpenses } from '@/app/actions/finance'
 import { format } from 'date-fns'
 import { RecordTitheModal, RecordOfferingModal, RecordExpenseModal } from '@/components/modals'
+import { protectPage } from '@/lib/auth/proxy'
 
 export default async function FinancePage() {
+  await protectPage('finances:view')
+
   const [stats, { data: recentTithes }, { data: recentOfferings }] = await Promise.all([
     getFinanceStats(),
     getTithes(1, 5),

@@ -174,7 +174,61 @@ const quickAccessReports = [
   },
 ]
 
-export default function ReportsPage() {
+import { protectPage } from '@/lib/auth/proxy'
+
+import { getCurrentUserWithRole } from '@/lib/auth/proxy'
+import { hasPermission, Permission, UserRole } from '@/lib/constants/roles'
+import { redirect } from 'next/navigation'
+
+// Map report types to permissions
+const reportPermissions: Record<string, Permission> = {
+  // Weekly Attendance (Attendance category)
+  'Weekly Attendance': 'attendance:view',
+  'Month Attendance': 'attendance:view',
+  'Attendance': 'attendance:view',
+
+  // Finance
+  'Monthly Finance': 'finances:view',
+  'Financial': 'finances:view',
+
+  // Members
+  'Member Directory': 'members:view',
+  'Membership': 'members:view',
+
+  // Shepherding
+  'Shepherd Follow-ups': 'shepherding:view',
+}
+
+export default async function ReportsPage() {
+  await protectPage('reports:view')
+
+  const user = await getCurrentUserWithRole()
+  if (!user) redirect('/login')
+
+  // Filter Quick Access
+  const visibleQuickAccess = quickAccessReports.filter(report => {
+    const requiredPermission = reportPermissions[report.label]
+    if (!requiredPermission) return true
+    return hasPermission(user.role, requiredPermission)
+  })
+
+  // Filter Categories
+  const visibleCategories = reportCategories.map(category => {
+    // Check if category itself has a restriction (matches title)
+    const categoryPermission = reportPermissions[category.title]
+    if (categoryPermission && !hasPermission(user.role, categoryPermission)) {
+      return null
+    }
+
+    // Filter sub-reports implicitly if parent is allowed? 
+    // Or filter them individually? 
+    // Let's assume if they have category access they have sub access unless specified?
+    // Actually, safer to filter sub-reports if we had granular perms.
+    // For now, let's keep it simple: if category is visible, show it.
+    // But wait, "Financial" requires 'finances:view'.
+    return category
+  }).filter(Boolean) as typeof reportCategories
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -189,7 +243,7 @@ export default function ReportsPage() {
 
       {/* Quick Access Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {quickAccessReports.map((report) => {
+        {visibleQuickAccess.map((report) => {
           const Icon = report.icon
           return (
             <Link key={report.href} href={report.href}>
@@ -218,7 +272,7 @@ export default function ReportsPage() {
 
       {/* Report Categories */}
       <div className="space-y-10">
-        {reportCategories.map((category) => {
+        {visibleCategories.map((category) => {
           const CategoryIcon = category.icon
 
           return (
@@ -273,6 +327,7 @@ export default function ReportsPage() {
           )
         })}
       </div>
+
 
       {/* Export Section */}
       <Card className="border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/20">

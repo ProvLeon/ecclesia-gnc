@@ -16,31 +16,21 @@ import {
   followUpAuditLog,
   users,
 } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { getUser } from '@/app/actions/auth'
-
-// Helper function to check permissions
-async function checkDeletePermission(requiredRole: string[]): Promise<boolean> {
-  const user = await getUser()
-  if (!user) return false
-
-  const [userRecord] = await db
-    .select({ role: users.role })
-    .from(users)
-    .where(eq(users.id, user.id))
-    .limit(1)
-
-  if (!userRecord) return false
-  return requiredRole.includes(userRecord.role)
-}
+import {
+  currentUserHasPermission,
+  currentUserHasAnyPermission,
+  getCurrentUserWithRole,
+} from '@/lib/auth/permissions'
 
 // Delete Member
 export async function deleteMember(memberId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin'])
+    const hasPermission = await currentUserHasPermission('members:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - only admins can delete members' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete members' }
     }
 
     const [member] = await db
@@ -78,9 +68,9 @@ export async function deleteMember(memberId: string) {
 // Delete Shepherd Assignment
 export async function deleteShepherdAssignment(assignmentId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'pastor'])
+    const hasPermission = await currentUserHasPermission('shepherding:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete assignments' }
     }
 
     const [assignment] = await db
@@ -107,9 +97,14 @@ export async function deleteShepherdAssignment(assignmentId: string) {
 // Delete Follow-Up
 export async function deleteFollowUp(followUpId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'pastor', 'shepherd'])
+    const userWithRole = await getCurrentUserWithRole()
+    if (!userWithRole) {
+      return { success: false, error: 'Unauthorized - user not authenticated' }
+    }
+
+    const hasPermission = await currentUserHasPermission('followups:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete follow-ups' }
     }
 
     const [followUp] = await db
@@ -122,15 +117,8 @@ export async function deleteFollowUp(followUpId: string) {
       return { success: false, error: 'Follow-up not found' }
     }
 
-    // Check if shepherd can only delete their own
-    const user = await getUser()
-    const [userRecord] = await db
-      .select({ role: users.role })
-      .from(users)
-      .where(eq(users.id, user?.id || ''))
-      .limit(1)
-
-    if (userRecord?.role === 'shepherd' && followUp.createdBy !== user?.id) {
+    // Shepherds can only delete their own follow-ups
+    if (userWithRole.role === 'shepherd' && followUp.createdBy !== userWithRole.id) {
       return { success: false, error: 'Shepherds can only delete their own follow-ups' }
     }
 
@@ -150,9 +138,9 @@ export async function deleteFollowUp(followUpId: string) {
 // Delete Department
 export async function deleteDepartment(departmentId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin'])
+    const hasPermission = await currentUserHasPermission('members:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - only admins can delete departments' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete departments' }
     }
 
     const [department] = await db
@@ -169,7 +157,7 @@ export async function deleteDepartment(departmentId: string) {
     const [deptMembers] = await db
       .select()
       .from(members)
-      .where(eq(members.id, departmentId)) // This might need adjustment based on schema
+      .where(eq(members.id, departmentId))
       .limit(1)
 
     if (deptMembers) {
@@ -189,9 +177,9 @@ export async function deleteDepartment(departmentId: string) {
 // Delete Service
 export async function deleteService(serviceId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'pastor'])
+    const hasPermission = await currentUserHasPermission('attendance:edit')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete services' }
     }
 
     const [service] = await db
@@ -219,9 +207,9 @@ export async function deleteService(serviceId: string) {
 // Delete Attendance Record
 export async function deleteAttendanceRecord(attendanceId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'pastor'])
+    const hasPermission = await currentUserHasPermission('attendance:edit')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete attendance records' }
     }
 
     const [record] = await db
@@ -247,9 +235,9 @@ export async function deleteAttendanceRecord(attendanceId: string) {
 // Delete Tithe Record
 export async function deleteThithe(titheId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'treasurer'])
+    const hasPermission = await currentUserHasPermission('finances:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete tithe records' }
     }
 
     const [record] = await db
@@ -275,9 +263,9 @@ export async function deleteThithe(titheId: string) {
 // Delete Offering Record
 export async function deleteOffering(offeringId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'treasurer'])
+    const hasPermission = await currentUserHasPermission('finances:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete offering records' }
     }
 
     const [record] = await db
@@ -303,9 +291,9 @@ export async function deleteOffering(offeringId: string) {
 // Delete Expense Record
 export async function deleteExpense(expenseId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'treasurer'])
+    const hasPermission = await currentUserHasPermission('finances:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete expense records' }
     }
 
     const [record] = await db
@@ -331,9 +319,9 @@ export async function deleteExpense(expenseId: string) {
 // Delete Event
 export async function deleteEvent(eventId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin', 'admin', 'pastor', 'dept_leader'])
+    const hasPermission = await currentUserHasPermission('events:delete')
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - insufficient permissions' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete events' }
     }
 
     const [event] = await db
@@ -359,12 +347,13 @@ export async function deleteEvent(eventId: string) {
 // Delete User
 export async function deleteUser(userId: string) {
   try {
-    const hasPermission = await checkDeletePermission(['super_admin'])
+    const authUser = await getUser()
+    const hasPermission = await currentUserHasPermission('users:delete')
+
     if (!hasPermission) {
-      return { success: false, error: 'Unauthorized - only super admins can delete users' }
+      return { success: false, error: 'Unauthorized - you do not have permission to delete users' }
     }
 
-    const authUser = await getUser()
     if (authUser?.id === userId) {
       return { success: false, error: 'Cannot delete your own account' }
     }

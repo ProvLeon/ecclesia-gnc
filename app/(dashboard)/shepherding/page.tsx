@@ -6,11 +6,14 @@ import Link from 'next/link'
 import { getShepherdingStats, getFollowUps } from '@/app/actions/shepherding'
 import { format } from 'date-fns'
 import { NewFollowUpModal } from '@/components/modals'
+import { protectPage } from '@/lib/auth/proxy'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function ShepherdingPage() {
+  await protectPage('shepherding:view')
+
   const [stats, { data: scheduledFollowUps }, { data: completedFollowUps }] = await Promise.all([
     getShepherdingStats(),
     getFollowUps('pending', 1, 10),

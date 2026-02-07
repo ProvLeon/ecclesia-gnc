@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getUser } from '@/app/actions/auth'
+import { getCurrentUserWithRole } from '@/lib/auth/proxy'
 import { Sidebar } from './components/sidebar'
 import { Header } from './components/header'
 
@@ -8,7 +8,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const user = await getUser()
+  const user = await getCurrentUserWithRole()
 
   if (!user) {
     redirect('/login')
@@ -16,7 +16,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <Sidebar />
+      <Sidebar userRole={user.role} />
       <div className="lg:pl-72 flex flex-col">
         <Header user={user} />
         <main

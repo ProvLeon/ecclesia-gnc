@@ -161,6 +161,7 @@ export const members = pgTable('members', {
   emergencyContactName: varchar('emergency_contact_name', { length: 255 }),
   emergencyContactPhone: varchar('emergency_contact_phone', { length: 20 }),
   notes: text('notes'),
+  portalToken: uuid('portal_token').unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
