@@ -134,6 +134,8 @@ export async function getMember(id: string) {
 
 
 
+import { createAdminClient } from '@/lib/supabase/admin'
+
 export async function updateMember(
   id: string,
   data: Partial<{
@@ -160,6 +162,31 @@ export async function updateMember(
     photoUrl: string
   }>
 ) {
+  // If photo is being updated, check if we need to delete the old one
+  if (data.photoUrl) {
+    const [currentMember] = await db
+      .select({ photoUrl: members.photoUrl })
+      .from(members)
+      .where(eq(members.id, id))
+      .limit(1)
+
+    if (currentMember?.photoUrl && currentMember.photoUrl !== data.photoUrl) {
+      // Delete old photo
+      const fileName = currentMember.photoUrl.split('/').pop()
+      if (fileName) {
+        try {
+          const supabase = createAdminClient()
+          await supabase.storage
+            .from('member-photos')
+            .remove([fileName])
+        } catch (error) {
+          console.error('Error deleting old member photo:', error)
+          // Continue with update even if delete fails
+        }
+      }
+    }
+  }
+
   const [updated] = await db
     .update(members)
     .set({
@@ -174,7 +201,6 @@ export async function updateMember(
   return updated
 }
 
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function deleteMember(id: string) {
   try {
