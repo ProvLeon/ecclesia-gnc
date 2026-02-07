@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, RefreshCw, CheckCircle, AlertCircle, FileSpreadsheet, Users, Wallet, CalendarCheck } from 'lucide-react'
-import { syncMembersFromSheet, syncTithesFromSheet, syncAttendanceFromSheet, getAvailableSheets, resolveSkippedEntry, resolveSkippedEntries } from '@/app/actions/sync'
+import { syncMembersFromSheet, syncTithesFromSheet, syncAttendanceFromSheet, getAvailableSheets, resolveSkippedEntry, resolveSkippedEntries, getMembershipSheetData, processMembershipChunk } from '@/app/actions/sync'
+import { ProgressBar } from '@/components/ui/progress-bar'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -37,6 +38,7 @@ export default function DataSettingsPage() {
     const [resolvingId, setResolvingId] = useState<number | null>(null)
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
     const [isBulkResolving, setIsBulkResolving] = useState(false)
+    const [syncProgress, setSyncProgress] = useState(0)
 
     useEffect(() => {
         getAvailableSheets().then((res) => {
@@ -49,23 +51,71 @@ export default function DataSettingsPage() {
     async function handleSyncMembers() {
         setIsSyncing('members')
         setResult(null)
+        setSyncProgress(0)
+
         try {
-            const res = await syncMembersFromSheet(selectedSheet)
-            setResult({
-                success: res.success,
-                message: res.success ? `Imported ${res.imported} members` : res.error || 'Failed',
-                details: res.skipped ? `Skipped ${res.skipped} rows` : undefined,
-                skippedEntries: res.skippedEntries
-            })
-            if (res.skippedEntries && res.skippedEntries.length > 0) {
-                toast.warning(`Import completed with ${res.skippedEntries.length} skipped entries. Please review below.`)
-            } else if (res.success) {
-                toast.success(`Successfully imported ${res.imported} members`)
+            // Step 1: Fetch raw data
+            const sheetRes = await getMembershipSheetData(selectedSheet)
+            if (!sheetRes.success || !sheetRes.rows) {
+                throw new Error(sheetRes.error || 'Failed to fetch sheet data')
             }
+
+            const totalRows = sheetRes.rows.length
+            const headers = sheetRes.headers
+            const chunkSize = 20
+
+            let totalImported = 0
+            let totalSkipped = 0
+            let allSkippedEntries: SkippedEntry[] = []
+
+            // Step 2: Process in chunks
+            for (let i = 0; i < totalRows; i += chunkSize) {
+                const chunk = sheetRes.rows.slice(i, i + chunkSize)
+                const startRowIndex = i + 2 // +2 for header and 0-index
+
+                const res = await processMembershipChunk({
+                    headers,
+                    rows: chunk,
+                    startRowIndex
+                })
+
+                if (!res.success) {
+                    console.error('Chunk failed:', res.error)
+                    // Continue with next chunk or stop? Let's continue but log error
+                    // toast.error(`Error in batch ${i}-${i+chunkSize}: ${res.error}`)
+                }
+
+                totalImported += res.imported
+                totalSkipped += (res.skipped || 0)
+                if (res.skippedEntries) {
+                    allSkippedEntries = [...allSkippedEntries, ...res.skippedEntries]
+                }
+
+                // Update Progress
+                const processed = Math.min(i + chunkSize, totalRows)
+                const percentage = Math.round((processed / totalRows) * 100)
+                setSyncProgress(percentage)
+            }
+
+            setResult({
+                success: true,
+                message: `Imported ${totalImported} members`,
+                details: totalSkipped ? `Skipped ${totalSkipped} rows` : undefined,
+                skippedEntries: allSkippedEntries
+            })
+
+            if (allSkippedEntries.length > 0) {
+                toast.warning(`Import completed with ${allSkippedEntries.length} skipped entries. Please review below.`)
+            } else {
+                toast.success(`Successfully imported ${totalImported} members`)
+            }
+
         } catch (error) {
             setResult({ success: false, message: (error as Error).message })
         } finally {
             setIsSyncing(null)
+            setSyncProgress(0)
+            // Revalidate happens in server action but we can do it here too if needed
         }
     }
 
@@ -396,6 +446,11 @@ export default function DataSettingsPage() {
                                 : <><RefreshCw className="h-4 w-4 mr-2" />Sync Members</>}
                         </Button>
                     </div>
+                    {isSyncing === 'members' && syncProgress > 0 && (
+                        <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                            <ProgressBar value={syncProgress} label="Processing records..." showPercentage animated variant="info" />
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

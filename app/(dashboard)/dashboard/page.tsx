@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Users, Wallet, CalendarCheck, TrendingUp, Heart, Building2, MessageSquare, ArrowRight, Activity, Zap, Target } from 'lucide-react'
 import Link from 'next/link'
 import { db } from '@/lib/db'
@@ -269,10 +269,8 @@ export default async function DashboardPage() {
                 <p className="text-sm text-slate-600 dark:text-slate-300">Pastoral care assignments awaiting shepherd action</p>
               </div>
             </div>
-            <Link href="/shepherding" className="w-full sm:w-auto">
-              <Button className="bg-primary hover:bg-primary/90 dark:bg-accent dark:hover:bg-accent/90 dark:text-primary text-white w-full sm:w-auto">
-                Review <Target className="h-4 w-4 ml-2" />
-              </Button>
+            <Link href="/shepherding" className={buttonVariants({ variant: "default", size: "lg" })}>
+              Review <Target className="h-4 w-4 ml-2" />
             </Link>
           </CardContent>
         </Card>

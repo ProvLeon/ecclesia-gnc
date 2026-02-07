@@ -16,6 +16,7 @@ import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { MobileSidebarTrigger } from './sidebar'
 import { UserRole } from '@/lib/constants/roles'
+import { ModeToggle } from '@/components/mode-toggle'
 
 interface HeaderProps {
     user: User & { role: UserRole }
@@ -50,10 +51,13 @@ export function Header({ user }: HeaderProps) {
                 {/* Right side - Notifications and User menu */}
                 <div className="flex items-center gap-3">
                     {/* Notifications */}
-                    <Button variant="ghost" size="icon" className="relative">
-                        <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <ModeToggle />
+                        <Button variant="ghost" size="icon" className="relative">
+                            <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                        </Button>
+                    </div>
 
                     {/* User Menu */}
                     <DropdownMenu>

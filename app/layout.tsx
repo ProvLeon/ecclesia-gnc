@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ToastContainer } from "@/components/Toast/ToastContainer";
 import { Toaster } from "sonner";
@@ -34,11 +35,18 @@ export default function RootLayout({
       >
         <SkipLink />
         <ErrorBoundary>
-          <NotificationProvider>
-            {children}
-            <ToastContainer />
-            <Toaster />
-          </NotificationProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <NotificationProvider>
+              {children}
+              <ToastContainer />
+              <Toaster />
+            </NotificationProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>
