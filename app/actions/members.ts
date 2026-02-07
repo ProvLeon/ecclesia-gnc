@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { members, departments, users, shepherds } from '@/lib/db/schema'
 import { eq, ilike, or, and, desc, asc, count, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendSMS } from './messages'
 
@@ -134,9 +135,6 @@ export async function getMember(id: string) {
   return member
 }
 
-
-
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function updateMember(
   id: string,
@@ -332,7 +330,7 @@ export async function assignMemberRole(memberId: string, role: 'super_admin' | '
     if (!userId) {
       // Check if user exists by email first (to avoid duplicates)
       const { data: existingUsers } = await supabase.auth.admin.listUsers()
-      const existingAuthUser = existingUsers.users.find(u => u.email === member.email)
+      const existingAuthUser = existingUsers.users.find((u: any) => u.email === member.email)
 
       if (existingAuthUser) {
         userId = existingAuthUser.id
@@ -361,6 +359,8 @@ export async function assignMemberRole(memberId: string, role: 'super_admin' | '
       // Link member to user
       await db.update(members).set({ userId }).where(eq(members.id, memberId))
     }
+
+    if (!userId) return { success: false, error: 'Failed to determine user ID' }
 
     // 4. Update or Create User Record in DB
     await db.insert(users).values({

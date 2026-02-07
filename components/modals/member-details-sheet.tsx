@@ -26,7 +26,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { getMember } from '@/app/actions/members'
-import { PromoteToShepherdModal } from '@/components/modals/promote-shepherd-modal'
+import { PromoteMemberModal } from '@/components/modals/promote-member-modal'
 import { MemberProfileUploader } from '@/components/member-profile-uploader'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -133,13 +133,13 @@ export function MemberDetailsSheet({ memberId, open, onOpenChange, onEdit }: Mem
                   <Pencil className="h-3.5 w-3.5 mr-2 text-blue-600" />
                   Edit Profile
                 </Button>
-                <PromoteToShepherdModal
+                <PromoteMemberModal
                   memberId={member.id}
                   memberName={`${member.firstName} ${member.lastName}`}
                   trigger={
                     <Button variant="outline" className="w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm">
                       <Shield className="h-3.5 w-3.5 mr-2 text-purple-600" />
-                      Promote
+                      Assign Role
                     </Button>
                   }
                 />
