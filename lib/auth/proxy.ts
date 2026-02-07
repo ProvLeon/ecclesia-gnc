@@ -164,10 +164,12 @@ export async function getScopedMemberIds(userId: string, role: UserRole): Promis
 
 /**
  * Get the department ID for a department leader.
- * Assumes dept leader is linked via departments.leaderId -> members.id.
+ * Checks both:
+ * 1. departmentLeaders table (new - multiple leaders per department)
+ * 2. departments.leaderId (legacy - primary leader)
  */
 export async function getDeptLeaderDepartmentId(userId: string): Promise<string | null> {
-    const { departments } = await import('@/lib/db/schema')
+    const { departments, departmentLeaders } = await import('@/lib/db/schema')
 
     // Find member linked to this user
     const member = await db.query.members.findFirst({
@@ -177,7 +179,21 @@ export async function getDeptLeaderDepartmentId(userId: string): Promise<string 
 
     if (!member) return null
 
-    // Find department where this member is the leader
+    // First check the departmentLeaders table (new system)
+    const leaderRecord = await db
+        .select({ departmentId: departmentLeaders.departmentId })
+        .from(departmentLeaders)
+        .where(and(
+            eq(departmentLeaders.memberId, member.id),
+            eq(departmentLeaders.isActive, true)
+        ))
+        .limit(1)
+
+    if (leaderRecord.length > 0) {
+        return leaderRecord[0].departmentId
+    }
+
+    // Fallback: check departments.leaderId (legacy support)
     const dept = await db.query.departments.findFirst({
         where: and(
             eq(departments.leaderId, member.id),
@@ -188,3 +204,4 @@ export async function getDeptLeaderDepartmentId(userId: string): Promise<string 
 
     return dept?.id || null
 }
+

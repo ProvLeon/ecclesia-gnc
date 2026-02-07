@@ -143,3 +143,112 @@ export async function registerNewMemberToDepartment(
     }
 }
 
+// ============================================================================
+// DEPARTMENT LEADERS MANAGEMENT
+// ============================================================================
+
+import { departmentLeaders, departmentLeaderRoleEnum } from '@/lib/db/schema'
+import { sql, and } from 'drizzle-orm'
+
+export type DepartmentLeaderRole = 'president' | 'vice_president' | 'secretary' | 'treasurer' | 'coordinator'
+
+/**
+ * Get all leaders for a department
+ */
+export async function getDepartmentLeaders(departmentId: string) {
+    const result = await db
+        .select({
+            id: departmentLeaders.id,
+            role: departmentLeaders.role,
+            isActive: departmentLeaders.isActive,
+            assignedDate: departmentLeaders.assignedDate,
+            memberId: members.id,
+            memberName: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
+            memberPhone: members.phonePrimary,
+            memberEmail: members.email,
+        })
+        .from(departmentLeaders)
+        .innerJoin(members, eq(departmentLeaders.memberId, members.id))
+        .where(and(
+            eq(departmentLeaders.departmentId, departmentId),
+            eq(departmentLeaders.isActive, true)
+        ))
+        .orderBy(departmentLeaders.role)
+
+    return result
+}
+
+/**
+ * Add a leader to a department
+ */
+export async function addDepartmentLeader(
+    departmentId: string,
+    memberId: string,
+    role: DepartmentLeaderRole,
+    assignedById?: string
+) {
+    try {
+        const [leader] = await db.insert(departmentLeaders).values({
+            departmentId,
+            memberId,
+            role,
+            isActive: true,
+            assignedDate: new Date().toISOString().split('T')[0],
+            assignedBy: assignedById,
+        }).returning()
+
+        revalidatePath(`/departments/${departmentId}`)
+        revalidatePath('/departments')
+        return { success: true, leader }
+    } catch (error: unknown) {
+        // Check for unique constraint violation
+        if (error instanceof Error && error.message.includes('unique')) {
+            return { success: false, error: 'This member is already a leader in this department' }
+        }
+        console.error('Error adding department leader:', error)
+        return { success: false, error: 'Failed to add leader' }
+    }
+}
+
+/**
+ * Update a department leader's role
+ */
+export async function updateDepartmentLeaderRole(
+    leaderId: string,
+    role: DepartmentLeaderRole
+) {
+    try {
+        const [updated] = await db.update(departmentLeaders)
+            .set({ role })
+            .where(eq(departmentLeaders.id, leaderId))
+            .returning()
+
+        if (updated) {
+            revalidatePath(`/departments/${updated.departmentId}`)
+        }
+        return { success: true, leader: updated }
+    } catch (error) {
+        console.error('Error updating department leader:', error)
+        return { success: false, error: 'Failed to update leader role' }
+    }
+}
+
+/**
+ * Remove a leader from a department (deactivates, doesn't delete)
+ */
+export async function removeDepartmentLeader(leaderId: string) {
+    try {
+        const [removed] = await db.update(departmentLeaders)
+            .set({ isActive: false })
+            .where(eq(departmentLeaders.id, leaderId))
+            .returning()
+
+        if (removed) {
+            revalidatePath(`/departments/${removed.departmentId}`)
+        }
+        return { success: true }
+    } catch (error) {
+        console.error('Error removing department leader:', error)
+        return { success: false, error: 'Failed to remove leader' }
+    }
+}

@@ -204,6 +204,10 @@ export async function updateMember(
 
 export async function deleteMember(id: string) {
   try {
+    // Import auth helper to get current user
+    const { getCurrentUserWithRole } = await import('@/lib/auth/proxy')
+    const currentUser = await getCurrentUserWithRole()
+
     // 1. Get member details first to find linked user and photo
     const [member] = await db
       .select({
@@ -216,9 +220,14 @@ export async function deleteMember(id: string) {
 
     if (!member) return { success: false, error: 'Member not found' }
 
+    // 2. Prevent self-deletion: check if current user is deleting themselves
+    if (currentUser && member.userId && currentUser.id === member.userId) {
+      return { success: false, error: 'You cannot delete your own account' }
+    }
+
     const supabase = createAdminClient()
 
-    // 2. Delete photo from storage if exists
+    // 3. Delete photo from storage if exists
     if (member.photoUrl) {
       const fileName = member.photoUrl.split('/').pop()
       if (fileName) {
@@ -228,7 +237,20 @@ export async function deleteMember(id: string) {
       }
     }
 
-    // 3. Delete auth user if exists
+    // 4. Explicitly delete related records that might not cascade
+    // Import related schemas
+    const { shepherdAssignments, departmentLeaders } = await import('@/lib/db/schema')
+
+    // Delete shepherd record if exists
+    await db.delete(shepherds).where(eq(shepherds.memberId, id))
+
+    // Delete shepherd assignments (as assignee)
+    await db.delete(shepherdAssignments).where(eq(shepherdAssignments.memberId, id))
+
+    // Delete department leader records if exists
+    await db.delete(departmentLeaders).where(eq(departmentLeaders.memberId, id))
+
+    // 5. Delete auth user if exists
     if (member.userId) {
       await supabase.auth.admin.deleteUser(member.userId)
 
@@ -236,11 +258,12 @@ export async function deleteMember(id: string) {
       await db.delete(users).where(eq(users.id, member.userId))
     }
 
-    // 4. Delete member record (cascade will handle related records like attendance/tithes if configured, 
-    //    but we'll delete the member record explicitly)
+    // 6. Delete member record (cascade will handle remaining related records like attendance/tithes)
     await db.delete(members).where(eq(members.id, id))
 
     revalidatePath('/members')
+    revalidatePath('/shepherding')
+    revalidatePath('/departments')
     return { success: true }
   } catch (error) {
     console.error('Error deleting member:', error)
@@ -253,6 +276,13 @@ export async function bulkDeleteMembers(ids: string[]) {
     const supabase = createAdminClient()
     let successCount = 0
     let failCount = 0
+
+    // Import auth helper to get current user
+    const { getCurrentUserWithRole } = await import('@/lib/auth/proxy')
+    const currentUser = await getCurrentUserWithRole()
+
+    // Import related schemas for cleanup
+    const { shepherdAssignments, departmentLeaders } = await import('@/lib/db/schema')
 
     // We process sequentially or in parallel? Parallel is faster but might hit rate limits if too many.
     // For now, simple Promise.all is fine for reasonable batch sizes.
@@ -270,7 +300,13 @@ export async function bulkDeleteMembers(ids: string[]) {
 
         if (!member) return
 
-        // 2. Delete photo
+        // 2. Skip if user is trying to delete themselves
+        if (currentUser && member.userId && currentUser.id === member.userId) {
+          failCount++ // Count as failed since we're skipping
+          return
+        }
+
+        // 3. Delete photo
         if (member.photoUrl) {
           const fileName = member.photoUrl.split('/').pop()
           if (fileName) {
@@ -280,13 +316,18 @@ export async function bulkDeleteMembers(ids: string[]) {
           }
         }
 
-        // 3. Delete auth user
+        // 4. Explicitly delete related records
+        await db.delete(shepherds).where(eq(shepherds.memberId, id))
+        await db.delete(shepherdAssignments).where(eq(shepherdAssignments.memberId, id))
+        await db.delete(departmentLeaders).where(eq(departmentLeaders.memberId, id))
+
+        // 5. Delete auth user
         if (member.userId) {
           await supabase.auth.admin.deleteUser(member.userId)
           await db.delete(users).where(eq(users.id, member.userId))
         }
 
-        // 4. Delete member record
+        // 6. Delete member record
         await db.delete(members).where(eq(members.id, id))
         successCount++
       } catch (err) {
@@ -296,6 +337,8 @@ export async function bulkDeleteMembers(ids: string[]) {
     }))
 
     revalidatePath('/members')
+    revalidatePath('/shepherding')
+    revalidatePath('/departments')
     return { success: true, count: successCount, failed: failCount }
   } catch (error) {
     console.error('Error in bulk delete:', error)

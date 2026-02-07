@@ -24,6 +24,14 @@ export const departmentRoleEnum = pgEnum('department_role', [
   'leader',
 ])
 
+export const departmentLeaderRoleEnum = pgEnum('department_leader_role', [
+  'president',
+  'vice_president',
+  'secretary',
+  'treasurer',
+  'coordinator',
+])
+
 export const userRoleEnum = pgEnum('user_role', [
   'super_admin',
   'pastor',
@@ -200,6 +208,29 @@ export const memberDepartments = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [unique().on(table.memberId, table.departmentId)]
+)
+
+// ============================================================================
+// DEPARTMENT_LEADERS TABLE - Leadership positions within departments
+// ============================================================================
+
+export const departmentLeaders = pgTable(
+  'department_leaders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    departmentId: uuid('department_id')
+      .notNull()
+      .references(() => departments.id, { onDelete: 'cascade' }),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    role: departmentLeaderRoleEnum('role').notNull(),
+    isActive: boolean('is_active').notNull().default(true),
+    assignedDate: date('assigned_date').notNull(),
+    assignedBy: uuid('assigned_by').references(() => users.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.departmentId, table.memberId)]
 )
 
 // ============================================================================
