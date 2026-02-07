@@ -15,6 +15,13 @@
       "when": 1770207153376,
       "tag": "0001_add_followup_feature",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770436665557,
+      "tag": "0002_stiff_king_bedlam",
+      "breakpoints": true
     }
   ]
 }
