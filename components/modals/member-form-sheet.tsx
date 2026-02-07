@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 import {
     Sheet,
     SheetContent,
@@ -194,8 +195,29 @@ export function MemberFormSheet({ memberId, initialData, open, onOpenChange, tri
             }, 1200)
         } catch (err) {
             console.error(err)
+            toast.error('Something went wrong. Please try again.')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const onInvalid = (errors: any) => {
+        const errorFields = Object.keys(errors)
+        if (errorFields.length > 0) {
+            toast.error(`Please fix ${errorFields.length} error(s) before saving.`, {
+                description: 'Check fields marked in red.'
+            })
+
+            // Auto-switch to the first tab with an error if current tab is valid
+            // Mapping fields to tabs (simplified logic)
+            const personalFields = ['firstName', 'lastName', 'joinDate']
+            const contactFields = ['phonePrimary', 'email']
+
+            const hasPersonalError = personalFields.some(f => errors[f])
+            const hasContactError = contactFields.some(f => errors[f])
+
+            if (hasPersonalError && activeTab !== 'personal') setActiveTab('personal')
+            else if (hasContactError && activeTab !== 'contact') setActiveTab('contact')
         }
     }
 
@@ -301,7 +323,7 @@ export function MemberFormSheet({ memberId, initialData, open, onOpenChange, tri
                             </div>
                         </div>
                     ) : (
-                        <form onSubmit={handleSubmit(onSubmit)}>
+                        <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
                             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
                                 <div className="bg-slate-100 dark:bg-slate-800/50 rounded-xl mb-6 pb-2">
                                     <TabsList className="grid grid-cols-4 w-full bg-transparent p-0 h-auto">
@@ -311,6 +333,9 @@ export function MemberFormSheet({ memberId, initialData, open, onOpenChange, tri
                                         >
                                             <User className="h-4 w-4 sm:mr-1.5" />
                                             <span className="hidden sm:inline">Personal</span>
+                                            {(errors.firstName || errors.lastName || errors.joinDate) && (
+                                                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                                            )}
                                         </TabsTrigger>
                                         <TabsTrigger
                                             value="contact"
@@ -318,6 +343,9 @@ export function MemberFormSheet({ memberId, initialData, open, onOpenChange, tri
                                         >
                                             <Phone className="h-4 w-4 sm:mr-1.5" />
                                             <span className="hidden sm:inline">Contact</span>
+                                            {(errors.phonePrimary || errors.email) && (
+                                                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                                            )}
                                         </TabsTrigger>
                                         <TabsTrigger
                                             value="church"
@@ -500,25 +528,25 @@ export function MemberFormSheet({ memberId, initialData, open, onOpenChange, tri
                                     Back
                                 </Button>
 
-                                {activeTab === 'emergency' ? (
+                                <div className="flex gap-2 flex-1 justify-end">
+                                    {activeTab !== 'emergency' && (
+                                        <Button
+                                            type="button"
+                                            onClick={() => goToTab('next')}
+                                        >
+                                            Next
+                                            <ChevronRight className="h-4 w-4 ml-1" />
+                                        </Button>
+                                    )}
                                     <Button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-1 bg-linear-to-r from-blue-600 to-indigo-600"
+                                        className="bg-linear-to-r from-blue-600 to-indigo-600"
                                     >
                                         {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                                         {isEditing ? 'Save Changes' : 'Add Member'}
                                     </Button>
-                                ) : (
-                                    <Button
-                                        type="button"
-                                        onClick={() => goToTab('next')}
-                                        className="flex-1"
-                                    >
-                                        Next
-                                        <ChevronRight className="h-4 w-4 ml-1" />
-                                    </Button>
-                                )}
+                                </div>
                             </div>
                         </form>
                     )}
