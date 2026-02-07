@@ -71,7 +71,7 @@ export function FollowUpCompletionForm({
       }
 
       const result = await completeFollowUp(followUpId, {
-        outcome: formData.outcome as any,
+        outcome: formData.outcome as 'contacted' | 'not_home' | 'left_message' | 'promised_action' | 'resolved' | 'escalated' | 'no_contact',
         outcomeNotes: formData.outcomeNotes,
         notes: formData.notes,
       })

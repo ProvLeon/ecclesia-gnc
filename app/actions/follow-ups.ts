@@ -168,7 +168,7 @@ export async function createFollowUp(data: CreateFollowUpInput) {
       })
       .returning()
 
-    await logFollowUpAudit(followUp.id, 'created', user, undefined, {
+    await logFollowUpAudit(followUp.id, 'created', userId, undefined, {
       title: followUp.title,
       type: followUp.followUpType,
       priority: followUp.priority,
@@ -192,10 +192,20 @@ export async function createFollowUp(data: CreateFollowUpInput) {
 
 export async function completeFollowUp(
   followUpId: string,
-  data: CompleteFollowUpInput,
-  userId: string
+  data: CompleteFollowUpInput
 ) {
   try {
+    // Get authenticated user from session
+    const authUser = await getUser()
+    if (!authUser || !authUser.id) {
+      return {
+        success: false,
+        error: 'Unauthorized - user not authenticated',
+      }
+    }
+
+    const userId = authUser.id
+
     const [followUp] = await db
       .select()
       .from(followUps)

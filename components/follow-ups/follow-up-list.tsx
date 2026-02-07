@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { FollowUp } from '@/lib/db/schema'
 import { FollowUpCard } from './follow-up-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -160,7 +161,16 @@ export function FollowUpList({
             {paginatedFollowUps.map((followUp) => (
               <FollowUpCard
                 key={followUp.id}
-                followUp={followUp}
+                followUp={{
+                  ...followUp,
+                  status: (followUp.status as 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled') || 'pending',
+                  priority: (followUp.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+                  outcome: (followUp.outcome as 'contacted' | 'not_home' | 'left_message' | 'promised_action' | 'resolved' | 'escalated' | 'no_contact' | null | undefined) || null,
+                } as Partial<FollowUp> & {
+                  memberName?: string
+                  memberPhone?: string
+                  shepherdName?: string
+                }}
                 onComplete={onComplete}
                 onEdit={onEdit}
                 onView={onView}

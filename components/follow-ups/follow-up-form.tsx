@@ -104,7 +104,7 @@ export function FollowUpForm({
       if (result.success) {
         setSuccess(true)
         setTimeout(() => {
-          onSuccess?.(result.data?.id)
+          onSuccess?.(result.data?.id || '')
           setFormData({
             followUpType: '',
             title: '',

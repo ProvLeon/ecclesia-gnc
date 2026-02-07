@@ -4,7 +4,7 @@ import { FollowUp } from '@/lib/db/schema'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Calendar, MapPin, AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
+import { Calendar, MapPin, AlertCircle, Clock, CheckCircle2, type LucideIcon } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface FollowUpCardProps {
@@ -18,7 +18,7 @@ interface FollowUpCardProps {
   onView?: (id: string) => void
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; icon: any }> = {
+const STATUS_COLORS: Record<string, { bg: string; text: string; icon: LucideIcon }> = {
   pending: { bg: 'bg-gray-100', text: 'text-gray-800', icon: Clock },
   assigned: { bg: 'bg-blue-100', text: 'text-blue-800', icon: AlertCircle },
   in_progress: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
@@ -81,7 +81,7 @@ export function FollowUpCard({
           {followUp.followUpType?.replace('_', ' ')}
         </Badge>
         <Badge className={`${PRIORITY_COLORS[followUp.priority || 'medium']} text-xs`}>
-          {followUp.priority?.charAt(0).toUpperCase() + followUp.priority?.slice(1)}
+          {((followUp.priority || 'medium').charAt(0).toUpperCase() + (followUp.priority || 'medium').slice(1))}
         </Badge>
       </div>
 
