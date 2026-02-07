@@ -1,9 +1,11 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { members, departments, users } from '@/lib/db/schema'
+import { members, departments, users, shepherds } from '@/lib/db/schema'
 import { eq, ilike, or, and, desc, asc, count, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { sendSMS } from './messages'
 
 export type MemberFilters = {
   search?: string
@@ -300,6 +302,115 @@ export async function bulkDeleteMembers(ids: string[]) {
   } catch (error) {
     console.error('Error in bulk delete:', error)
     return { success: false, error: 'Failed to perform bulk delete' }
+  }
+}
+
+export async function assignMemberRole(memberId: string, role: 'super_admin' | 'pastor' | 'admin' | 'treasurer' | 'dept_leader' | 'shepherd' | 'member') {
+  try {
+    // 1. Get member details
+    const [member] = await db
+      .select()
+      .from(members)
+      .where(eq(members.id, memberId))
+      .limit(1)
+
+    if (!member) return { success: false, error: 'Member not found' }
+
+    // 2. Validate Email and Phone
+    if (!member.email || !member.phonePrimary) {
+      return {
+        success: false,
+        error: 'Member must have a valid Email and Phone Number to be promoted.'
+      }
+    }
+
+    const supabase = createAdminClient()
+    const defaultPassword = 'password123'
+    let userId = member.userId
+
+    // 3. Create Auth Account if missing
+    if (!userId) {
+      // Check if user exists by email first (to avoid duplicates)
+      const { data: existingUsers } = await supabase.auth.admin.listUsers()
+      const existingAuthUser = existingUsers.users.find(u => u.email === member.email)
+
+      if (existingAuthUser) {
+        userId = existingAuthUser.id
+      } else {
+        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+          email: member.email,
+          password: defaultPassword,
+          email_confirm: true,
+          user_metadata: {
+            first_name: member.firstName,
+            last_name: member.lastName,
+            full_name: `${member.firstName} ${member.lastName}`,
+            role: role
+          }
+        })
+
+        if (createError) {
+          console.error('Auth creation error:', createError)
+          return { success: false, error: 'Failed to create user account: ' + createError.message }
+        }
+
+        if (!newUser.user) return { success: false, error: 'Failed to create user account' }
+        userId = newUser.user.id
+      }
+
+      // Link member to user
+      await db.update(members).set({ userId }).where(eq(members.id, memberId))
+    }
+
+    // 4. Update or Create User Record in DB
+    await db.insert(users).values({
+      id: userId,
+      email: member.email,
+      role: role,
+      isActive: true,
+    }).onConflictDoUpdate({
+      target: users.id,
+      set: { role: role, updatedAt: new Date() }
+    })
+
+    // 5. Handle Shepherd Role Specifics
+    if (role === 'shepherd') {
+      // Check if already a shepherd
+      const [existingShepherd] = await db
+        .select()
+        .from(shepherds)
+        .where(and(eq(shepherds.memberId, memberId), eq(shepherds.isActive, true)))
+        .limit(1)
+
+      if (!existingShepherd) {
+        await db.insert(shepherds).values({
+          memberId,
+          assignedDate: new Date().toISOString().split('T')[0],
+          isActive: true,
+        })
+      }
+    }
+
+    // 6. Send SMS Notification
+    try {
+      const message = `Congratulations ${member.firstName}! You have been promoted to ${role.replace('_', ' ').toUpperCase()} at GNC. Login details - Email: ${member.email}, Password: ${defaultPassword}. Please change your password on login.`
+
+      await sendSMS({
+        recipients: [{ memberId, phone: member.phonePrimary }],
+        message
+      })
+    } catch (smsError) {
+      console.error('Failed to send promotion SMS:', smsError)
+      // We don't fail the whole operation if SMS fails, but we log it
+    }
+
+    revalidatePath('/members')
+    revalidatePath(`/members/${memberId}`)
+    return { success: true }
+
+  } catch (error) {
+    console.error('Error assigning role:', error)
+    return { success: false, error: 'Failed to assign role' }
   }
 }
 
