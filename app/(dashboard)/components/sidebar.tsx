@@ -16,6 +16,7 @@ import {
   Settings,
   ChevronLeft,
   Calendar,
+  Menu,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -60,7 +61,7 @@ function NavItem({ item, isActive }: { item: typeof navigation[0]; isActive: boo
       className={cn(
         'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200',
         isActive
-          ? 'bg-blue-600 text-white shadow-lg shadow-primary/30 hover:shadow-md'
+          ? 'bg-primary text-background shadow-lg shadow-primary/30 hover:shadow-md'
           : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
       )}
     >
@@ -165,9 +166,10 @@ export function MobileSidebarTrigger({ userRole }: { userRole: UserRole }) {
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="lg:hidden">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          </svg> */}
+          <Menu className='h-6 w-6' />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-72">

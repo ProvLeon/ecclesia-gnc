@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen relative bg-slate-50 dark:bg-slate-900 overflow-hidden">
+    <div className="min-h-screen relative bg-slate-50 dark:bg-slate-900 overflow-x-hidden">
       {/* Background Pattern */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-slate-100 to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900" />
@@ -27,7 +27,7 @@ export default async function DashboardLayout({
 
       <div className="relative z-10 flex h-full">
         <Sidebar userRole={user.role} />
-        <div className="flex-1 flex flex-col min-h-screen lg:pl-72">
+        <div className="flex-1 flex flex-col min-h-screen lg:pl-72 pt-16">
           <Header user={user} />
           <main
             id="main-content"
