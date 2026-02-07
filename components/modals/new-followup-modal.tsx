@@ -41,7 +41,7 @@ interface NewFollowUpModalProps {
 export function NewFollowUpModal({ trigger, onSuccess }: NewFollowUpModalProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [members, setMembers] = useState<{ id: string; name: string; memberId: string; phone: string }[]>([])
+  const [members, setMembers] = useState<{ id: string; name: string; memberId: string; phone: string | null }[]>([])
   const [search, setSearch] = useState('')
   const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null)
   const [type, setType] = useState('visit')

@@ -26,7 +26,7 @@ type FormData = z.infer<typeof schema>
 
 export default function NewFollowUpPage() {
   const router = useRouter()
-  const [members, setMembers] = useState<{ id: string; name: string; memberId: string; phone: string }[]>([])
+  const [members, setMembers] = useState<{ id: string; name: string; memberId: string; phone: string | null }[]>([])
   const [search, setSearch] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)

@@ -32,15 +32,15 @@ import { sendSMS, getMembersForSMS } from '@/app/actions/messages'
 interface ComposeMessageModalProps {
     trigger?: React.ReactNode
     onSuccess?: () => void
-    defaultRecipients?: { id: string; name: string; phone: string }[]
+    defaultRecipients?: { id: string; name: string; phone: string | null }[]
 }
 
 export function ComposeMessageModal({ trigger, onSuccess, defaultRecipients }: ComposeMessageModalProps) {
     const router = useRouter()
     const [open, setOpen] = useState(false)
-    const [members, setMembers] = useState<{ id: string; name: string; phone: string; memberId: string }[]>([])
+    const [members, setMembers] = useState<{ id: string; name: string; phone: string | null; memberId: string }[]>([])
     const [search, setSearch] = useState('')
-    const [selected, setSelected] = useState<Map<string, { name: string; phone: string }>>(new Map())
+    const [selected, setSelected] = useState<Map<string, { name: string; phone: string | null }>>(new Map())
     const [message, setMessage] = useState('')
     const [sending, setSending] = useState(false)
     const [success, setSuccess] = useState<{ sent: number; failed: number } | null>(null)
@@ -58,7 +58,7 @@ export function ComposeMessageModal({ trigger, onSuccess, defaultRecipients }: C
 
     const filteredMembers = members.filter((m) =>
         m.name.toLowerCase().includes(search.toLowerCase()) ||
-        m.phone.includes(search)
+        (m.phone && m.phone.includes(search))
     )
 
     function toggleMember(member: typeof members[0]) {
@@ -81,10 +81,12 @@ export function ComposeMessageModal({ trigger, onSuccess, defaultRecipients }: C
         if (selected.size === 0 || !message.trim()) return
 
         setSending(true)
-        const recipients = Array.from(selected.entries()).map(([id, data]) => ({
-            memberId: id,
-            phone: data.phone,
-        }))
+        const recipients = Array.from(selected.entries())
+            .filter(([_, data]) => data.phone)
+            .map(([id, data]) => ({
+                memberId: id,
+                phone: data.phone!,
+            }))
 
         try {
             const res = await sendSMS({ recipients, message })

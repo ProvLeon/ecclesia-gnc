@@ -13,7 +13,7 @@ interface Member {
     id: string
     memberId: string
     name: string
-    phone: string
+    phone: string | null
 }
 
 interface AttendanceRecorderProps {
@@ -32,7 +32,7 @@ export function AttendanceRecorder({ serviceId, members, existingAttendees }: At
         if (existingAttendees.includes(m.id)) return false
         if (!search) return true
         const s = search.toLowerCase()
-        return m.name.toLowerCase().includes(s) || m.memberId.toLowerCase().includes(s) || m.phone.includes(s)
+        return m.name.toLowerCase().includes(s) || m.memberId.toLowerCase().includes(s) || m.phone?.includes(s)
     })
 
     function toggleMember(id: string) {
