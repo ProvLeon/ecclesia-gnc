@@ -188,8 +188,8 @@ export default async function SettingsPage() {
                   <Zap className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">Ecclesia CMS</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Version 1.0.0 • GNC AG Ejisu</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">GNCAG CMS</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Version {process.env.NEXT_PUBLIC_APP_VERSION} • GNC AG Ejisu</p>
                 </div>
               </div>
               <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">

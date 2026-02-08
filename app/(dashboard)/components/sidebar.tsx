@@ -92,22 +92,22 @@ function SidebarContent({ userRole }: { userRole: UserRole }) {
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-200 dark:border-slate-800">
         <Image
-          src="/ecclesia_logomark_Wbg.png"
-          alt="Ecclesia"
+          src="/gnc_final_logomark.png"
+          alt="GNCAG"
           width={40}
           height={40}
           className="dark:hidden"
         />
         <Image
-          src="/ecclesia_logomark_Bbg.png"
-          alt="Ecclesia"
+          src="/gnc_final_logomark.png"
+          alt="GNCAG"
           width={40}
           height={40}
           className="hidden dark:block"
         />
         <div>
-          <h1 className="font-bold text-lg text-slate-900 dark:text-white">Ecclesia</h1>
-          <p className="text-xs text-slate-500">GNC AG Ejisu</p>
+          <h1 className="font-bold text-lg text-slate-900 dark:text-white">GNCAG</h1>
+          <p className="text-xs text-slate-500">Good News Centre AG</p>
         </div>
       </div>
 

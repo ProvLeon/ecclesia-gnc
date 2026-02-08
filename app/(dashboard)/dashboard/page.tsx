@@ -135,7 +135,7 @@ export default async function DashboardPage() {
       {/* Header Section */}
       <div className="space-y-2">
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-        <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base">Welcome back to Ecclesia — GNC AG Ejisu</p>
+        <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base">Welcome back to GNCAG View</p>
       </div>
 
       {/* Primary Stats Grid */}

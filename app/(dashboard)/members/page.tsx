@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { MembersContent } from './components/members-content'
 
 export const metadata: Metadata = {
-  title: 'Members | Ecclesia GNC',
+  title: 'Members | GNCAG',
   description: 'Manage church members and their information',
 }
 

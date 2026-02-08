@@ -40,7 +40,7 @@ export default async function DashboardLayout({
             role="contentinfo"
             className="border-t border-slate-200 dark:border-slate-700 px-4 sm:px-6 lg:px-8 py-4 text-sm text-slate-500 dark:text-slate-400 backdrop-blur-sm"
           >
-            <p>&copy; 2025 Ecclesia GNC. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} GNCAG. All rights reserved.</p>
           </footer>
         </div>
       </div>

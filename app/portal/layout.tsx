@@ -6,7 +6,7 @@ import Image from 'next/image'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-    title: 'Member Portal | Ecclesia GNC',
+    title: 'Member Portal | GNCAG',
     description: 'GNC AG Member Access Portal',
 }
 
@@ -23,9 +23,9 @@ export default function PortalLayout({
                         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="h-8 w-8 flex items-center justify-center">
-                                    <Image src="/ecclesia_logomark_Bbg.png" alt="Ecclesia GNC" width={24} height={24} />
+                                    <Image src="/gnc_final_logomark.png" alt="GNCAG" width={24} height={24} />
                                 </div>
-                                <span className="font-semibold text-slate-900 dark:text-white">Ecclesia GNC</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">GNCAG</span>
                             </div>
                             <div className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                 Member Portal
@@ -37,7 +37,7 @@ export default function PortalLayout({
                     </main>
                     <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6">
                         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
-                            &copy; {new Date().getFullYear()} Ecclesia GNC AG. All rights reserved.
+                            &copy; {new Date().getFullYear()} GNCAG. All rights reserved.
                         </div>
                     </footer>
                 </div>

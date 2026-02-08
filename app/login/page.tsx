@@ -42,17 +42,17 @@ export default function LoginPage() {
                     {/* Logo */}
                     <div className="flex justify-center">
                         <Image
-                            src="/ecclesia_logomark_Bbg.png"
-                            alt="Ecclesia Logo"
+                            src="/gnc_final_logomark.png"
+                            alt="GNCAG Logo"
                             width={120}
                             height={120}
                             priority
-                            className="drop-shadow-lg"
+                            className="drop-shadow-lg shadow-white stroke-white stroke-2"
                         />
                     </div>
                     <div>
                         <CardTitle className="text-2xl font-bold text-white">
-                            Welcome to Ecclesia
+                            Welcome to GNCAG View
                         </CardTitle>
                         <CardDescription className="text-slate-400 mt-2">
                             Good News Centre AG — Church Management System
@@ -133,7 +133,7 @@ export default function LoginPage() {
                     <div className="mt-6 pt-6 border-t border-slate-700">
                         <p className="text-center text-sm text-slate-500">
                             Powered by{' '}
-                            <span className="text-blue-400 font-medium">Ecclesia</span>
+                            <span className="text-blue-400 font-medium">GNCAG</span>
                             {' '}— Church Management Made Simple
                         </p>
                     </div>

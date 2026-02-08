@@ -152,7 +152,7 @@ export async function recordTithe(data: {
 
       // 4. Send SMS
       // Use process.env.NEXT_PUBLIC_APP_URL or fallback to a default if not set
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecclesia-gnc.vercel.app'
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gncag-view.vercel.app'
       const magicLink = `${baseUrl}/portal/${token}`
       const message = `Dear ${member.firstName}, we received your tithe of GH₵ ${data.amount}. God bless you! View details: ${magicLink}`
 

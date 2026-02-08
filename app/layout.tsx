@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ecclesia GNC",
+  title: "GNCAG",
   description: "Good News Center - Church Management System",
 };
 
