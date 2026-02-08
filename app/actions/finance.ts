@@ -236,14 +236,7 @@ export async function recordExpense(data: {
 }
 
 export async function getMembersForFinance(query?: string) {
-  const baseQuery = db
-    .select({
-      id: members.id,
-      name: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
-      memberId: members.memberId,
-    })
-    .from(members)
-    .where(eq(members.memberStatus, 'active'))
+  const conditions = [eq(members.memberStatus, 'active')]
 
   if (query) {
     const { getSearchConditions } = await import('@/lib/db/utils')
@@ -254,16 +247,18 @@ export async function getMembersForFinance(query?: string) {
       members.phonePrimary
     ])
     if (searchConditions) {
-      baseQuery.where(
-        and(
-          eq(members.memberStatus, 'active'),
-          searchConditions
-        )
-      )
+      conditions.push(searchConditions)
     }
   }
 
-  return baseQuery
+  return db
+    .select({
+      id: members.id,
+      name: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
+      memberId: members.memberId,
+    })
+    .from(members)
+    .where(and(...conditions))
     .orderBy(members.firstName)
     .limit(50)
 }
