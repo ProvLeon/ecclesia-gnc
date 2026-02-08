@@ -47,3 +47,6 @@ next-env.d.ts
 FOLLOWUP_FEATURE_ANALYSIS.md
 FOLLOWUP_IMPLEMENTATION_CHECKLIST.md
 scripts/README.md
+temp_auto_push.bat
+temp_interactive_push.bat
+branch_structure.json
