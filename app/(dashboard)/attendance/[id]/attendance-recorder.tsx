@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,19 +20,54 @@ interface AttendanceRecorderProps {
     serviceId: string
     members: Member[]
     existingAttendees: string[]
+    scopedMemberIds?: string[] | null
 }
 
-export function AttendanceRecorder({ serviceId, members, existingAttendees }: AttendanceRecorderProps) {
+export function AttendanceRecorder({ serviceId, members, existingAttendees, scopedMemberIds }: AttendanceRecorderProps) {
     const router = useRouter()
     const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
+    const [searchedMembers, setSearchedMembers] = useState<Member[]>(members)
     const [selected, setSelected] = useState<string[]>([])
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
 
-    const filteredMembers = members.filter((m) => {
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+        }, 300)
+
+        return () => clearTimeout(timer)
+    }, [search])
+
+    // Fetch members when debounced search changes
+    useEffect(() => {
+        const fetchMembers = async () => {
+            setIsLoading(true)
+            try {
+                // If search is empty, revert to initial members if available and valid
+                if (!debouncedSearch) {
+                    setSearchedMembers(members)
+                    return
+                }
+
+                const { getMembersForAttendance } = await import('@/app/actions/attendance')
+                const results = await getMembersForAttendance(scopedMemberIds, debouncedSearch)
+                setSearchedMembers(results)
+            } catch (error) {
+                console.error('Failed to fetch members:', error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchMembers()
+    }, [debouncedSearch, members, scopedMemberIds])
+
+    const filteredMembers = searchedMembers.filter((m) => {
         if (existingAttendees.includes(m.id)) return false
-        if (!search) return true
-        const s = search.toLowerCase()
-        return m.name.toLowerCase().includes(s) || m.memberId.toLowerCase().includes(s) || m.phone?.includes(s)
+        return true
     })
 
     function toggleMember(id: string) {
@@ -49,6 +84,7 @@ export function AttendanceRecorder({ serviceId, members, existingAttendees }: At
         try {
             await recordAttendance({ serviceId, memberIds: selected })
             setSelected([])
+            setSearch('') // Clear search after successful add
             router.refresh()
         } catch {
             // Handle error
@@ -82,15 +118,20 @@ export function AttendanceRecorder({ serviceId, members, existingAttendees }: At
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-10 bg-slate-50 dark:bg-slate-900"
                     />
+                    {isLoading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                        </div>
+                    )}
                 </div>
 
                 <div className="max-h-64 overflow-y-auto border rounded-lg divide-y dark:divide-slate-700">
                     {filteredMembers.length === 0 ? (
                         <div className="p-4 text-center text-slate-500">
-                            {members.length === existingAttendees.length ? 'All members already checked in' : 'No members found'}
+                            {isLoading ? 'Searching...' : (members.length > 0 && !search ? 'All members already checked in' : 'No members found')}
                         </div>
                     ) : (
-                        filteredMembers.slice(0, 50).map((m) => (
+                        filteredMembers.map((m) => (
                             <label key={m.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer">
                                 <Checkbox checked={selected.includes(m.id)} onCheckedChange={() => toggleMember(m.id)} />
                                 <div className="flex-1">
@@ -105,3 +146,4 @@ export function AttendanceRecorder({ serviceId, members, existingAttendees }: At
         </Card>
     )
 }
+

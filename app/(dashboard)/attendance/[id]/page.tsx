@@ -71,7 +71,7 @@ export default async function ServiceAttendancePage({ params }: PageProps) {
             </div>
 
             {/* Record Attendance */}
-            <AttendanceRecorder serviceId={id} members={allMembers} existingAttendees={attendees.map(a => a.memberId)} />
+            <AttendanceRecorder serviceId={id} members={allMembers} existingAttendees={attendees.map(a => a.memberId)} scopedMemberIds={scopedMemberIds} />
 
             {/* Attendees List */}
             <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">

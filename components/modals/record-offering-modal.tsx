@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { PlusCircle, Loader2, Landmark, Check } from 'lucide-react'
+import { PlusCircle, Loader2, Landmark, Check, Search, User } from 'lucide-react'
 import { recordOffering, getMembersForFinance } from '@/app/actions/finance'
 
 const OFFERING_TYPES = [
@@ -36,21 +36,32 @@ interface RecordOfferingModalProps {
 export function RecordOfferingModal({ trigger, onSuccess }: RecordOfferingModalProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [members, setMembers] = useState<{ id: string; name: string }[]>([])
+    const [members, setMembers] = useState<{ id: string; name: string; memberId: string }[]>([])
     const [amount, setAmount] = useState('')
     const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0])
     const [offeringType, setOfferingType] = useState('Sunday Service')
     const [paymentMethod, setPaymentMethod] = useState('')
     const [isAnonymous, setIsAnonymous] = useState(false)
-    const [memberId, setMemberId] = useState('')
+    const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null)
+    const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [success, setSuccess] = useState(false)
     const router = useRouter()
 
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+        }, 300)
+
+        return () => clearTimeout(timer)
+    }, [search])
+
     useEffect(() => {
         if (open) {
-            getMembersForFinance().then(setMembers)
+            getMembersForFinance(debouncedSearch).then(setMembers)
         }
-    }, [open])
+    }, [open, debouncedSearch])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -58,7 +69,7 @@ export function RecordOfferingModal({ trigger, onSuccess }: RecordOfferingModalP
 
         setLoading(true)
         await recordOffering({
-            memberId: isAnonymous ? undefined : memberId || undefined,
+            memberId: isAnonymous ? undefined : selectedMember?.id,
             amount: parseFloat(amount),
             serviceDate,
             offeringType,
@@ -81,7 +92,8 @@ export function RecordOfferingModal({ trigger, onSuccess }: RecordOfferingModalP
         setOfferingType('Sunday Service')
         setPaymentMethod('')
         setIsAnonymous(false)
-        setMemberId('')
+        setSelectedMember(null)
+        setSearch('')
         setSuccess(false)
     }
 
@@ -193,16 +205,53 @@ export function RecordOfferingModal({ trigger, onSuccess }: RecordOfferingModalP
                     {!isAnonymous && (
                         <div className="space-y-1.5">
                             <Label>Member (Optional)</Label>
-                            <Select value={memberId} onValueChange={setMemberId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select member" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {members.map((m) => (
-                                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+
+                            {!selectedMember ? (
+                                <div className="space-y-2">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <Input
+                                            placeholder="Search members..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            className="pl-10"
+                                        />
+                                    </div>
+                                    <div className="max-h-36 overflow-y-auto rounded-lg border divide-y dark:divide-slate-700">
+                                        {members.map((m) => (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                onClick={() => setSelectedMember(m)}
+                                                className="w-full p-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3"
+                                            >
+                                                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                                                    <User className="h-4 w-4 text-slate-500" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-sm truncate">{m.name}</p>
+                                                    <p className="text-xs text-slate-500">{m.memberId}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
+                                            <User className="h-5 w-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-blue-900 dark:text-blue-100">{selectedMember.name}</p>
+                                            <p className="text-xs text-blue-600">{selectedMember.memberId}</p>
+                                        </div>
+                                    </div>
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
+                                        Change
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
 

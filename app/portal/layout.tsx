@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google'
 import '@/app/globals.css'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,8 +22,8 @@ export default function PortalLayout({
                     <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
                         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <span className="font-bold text-primary">G</span>
+                                <div className="h-8 w-8 flex items-center justify-center">
+                                    <Image src="/ecclesia_logomark_Bbg.png" alt="Ecclesia GNC" width={24} height={24} />
                                 </div>
                                 <span className="font-semibold text-slate-900 dark:text-white">Ecclesia GNC</span>
                             </div>

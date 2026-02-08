@@ -11,6 +11,7 @@ import {
 } from '@/lib/google-sheets'
 import { desc, ilike, or, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { randomUUID } from 'crypto'
 
 export async function getAvailableSheets() {
     try {
@@ -220,6 +221,7 @@ export async function syncMembersFromSheet(sheetName: string = SHEET_NAMES.MEMBE
                     joinDate: new Date().toISOString().split('T')[0],
                     isBaptized: !!(cleanString(parsed.baptismStatus)?.toLowerCase().includes('yes') ||
                         cleanString(parsed.baptismStatus)?.toLowerCase().includes('baptized')),
+                    portalToken: randomUUID(),
                 }).returning()
 
                 // Also add to existingPhoneMap so future rows in this batch don't create duplicates
@@ -776,6 +778,7 @@ export async function resolveSkippedEntry(
                 memberId,
                 memberStatus: 'active',
                 joinDate: new Date().toISOString().split('T')[0],
+                portalToken: randomUUID(),
             }).returning()
 
             // Link department if provided

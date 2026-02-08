@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db'
 import { tithes, offerings, expenses, members } from '@/lib/db/schema'
-import { eq, desc, sql, gte } from 'drizzle-orm'
+import { eq, desc, sql, gte, ilike, or, and } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export async function getFinanceStats() {
@@ -105,6 +105,7 @@ export async function getExpenses(page = 1, pageSize = 10) {
 
 import { sendSMS } from './messages'
 import { randomUUID } from 'crypto'
+import { ensurePortalToken } from './members'
 
 // ... existing imports
 
@@ -135,19 +136,19 @@ export async function recordTithe(data: {
         id: true,
         firstName: true,
         phonePrimary: true,
-        portalToken: true,
       }
     })
 
     if (member && member.phonePrimary) {
-      // 3. Ensure Portal Token Exists
-      let token = member.portalToken
-      if (!token) {
-        token = randomUUID()
-        await tx.update(members)
-          .set({ portalToken: token })
-          .where(eq(members.id, member.id))
-      }
+      // 3. Ensure Portal Token Exists (handled outside/before or we do it here but ensure persistence)
+      // Since we are in a transaction, we should use the inner helper logic or call the external one effectively.
+      // But ensurePortalToken uses 'db' directly, which is separate from 'tx'. 
+      // Using 'db' inside 'tx' is fine but runs in separate transaction.
+      // To be safe and follow the plan, we'll get the token using the helper *before* relying on it, 
+      // OR we can just use it here knowing it commits separately.
+
+      // Let's call the helper to get the token.
+      const token = await ensurePortalToken(member.id)
 
       // 4. Send SMS
       // Use process.env.NEXT_PUBLIC_APP_URL or fallback to a default if not set
@@ -192,18 +193,11 @@ export async function recordOffering(data: {
           id: true,
           firstName: true,
           phonePrimary: true,
-          portalToken: true,
         }
       })
 
       if (member && member.phonePrimary) {
-        let token = member.portalToken
-        if (!token) {
-          token = randomUUID()
-          await tx.update(members)
-            .set({ portalToken: token })
-            .where(eq(members.id, member.id))
-        }
+        const token = await ensurePortalToken(member.id)
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecclesia-gnc.vercel.app'
         const magicLink = `${baseUrl}/portal/${token}`
@@ -241,8 +235,8 @@ export async function recordExpense(data: {
   return { success: true }
 }
 
-export async function getMembersForFinance() {
-  return db
+export async function getMembersForFinance(query?: string) {
+  const baseQuery = db
     .select({
       id: members.id,
       name: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
@@ -250,8 +244,23 @@ export async function getMembersForFinance() {
     })
     .from(members)
     .where(eq(members.memberStatus, 'active'))
+
+  if (query) {
+    const searchPattern = `%${query}%`
+    baseQuery.where(
+      and(
+        eq(members.memberStatus, 'active'),
+        or(
+          sql`concat(${members.firstName}, ' ', ${members.lastName}) ILIKE ${searchPattern}`,
+          sql`${members.memberId} ILIKE ${searchPattern}`
+        )
+      )
+    )
+  }
+
+  return baseQuery
     .orderBy(members.firstName)
-    .limit(200)
+    .limit(50)
 }
 
 // Expense Approval Workflow

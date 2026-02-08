@@ -33,6 +33,7 @@ export function RecordTitheModal({ trigger, onSuccess }: RecordTitheModalProps) 
     const [loading, setLoading] = useState(false)
     const [members, setMembers] = useState<{ id: string; name: string; memberId: string }[]>([])
     const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null)
     const [amount, setAmount] = useState('')
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
@@ -40,16 +41,21 @@ export function RecordTitheModal({ trigger, onSuccess }: RecordTitheModalProps) 
     const [success, setSuccess] = useState(false)
     const router = useRouter()
 
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+        }, 300)
+
+        return () => clearTimeout(timer)
+    }, [search])
+
     useEffect(() => {
         if (open) {
-            getMembersForFinance().then(setMembers)
+            getMembersForFinance(debouncedSearch).then(setMembers)
         }
-    }, [open])
+    }, [open, debouncedSearch])
 
-    const filteredMembers = members.filter((m) =>
-        m.name.toLowerCase().includes(search.toLowerCase()) ||
-        m.memberId.toLowerCase().includes(search.toLowerCase())
-    )
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -133,7 +139,7 @@ export function RecordTitheModal({ trigger, onSuccess }: RecordTitheModalProps) 
                                 />
                             </div>
                             <div className="max-h-36 overflow-y-auto rounded-lg border divide-y dark:divide-slate-700">
-                                {filteredMembers.slice(0, 8).map((m) => (
+                                {members.map((m) => (
                                     <button
                                         key={m.id}
                                         type="button"

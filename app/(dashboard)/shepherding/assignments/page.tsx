@@ -13,6 +13,7 @@ import { db } from '@/lib/db'
 import { shepherds, shepherdAssignments, members } from '@/lib/db/schema'
 import { eq, desc, sql, count } from 'drizzle-orm'
 import { AssignmentActions } from './assignment-actions'
+import { UnassignedMembersList } from './unassigned-members-list'
 
 async function getShepherdsWithAssignments() {
     return db
@@ -196,39 +197,11 @@ export default async function ShepherdAssignmentsPage() {
 
                 {/* Unassigned Members */}
                 <div>
-                    <Card>
-                        <CardHeader className="border-b border-slate-200 dark:border-slate-700">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Users className="h-4 w-4" />
-                                Unassigned ({unassignedMembers.length})
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0 divide-y divide-slate-200 dark:divide-slate-700 max-h-96 overflow-y-auto">
-                            {unassignedMembers.length === 0 ? (
-                                <div className="p-4 text-center text-sm text-slate-500">
-                                    All members are assigned!
-                                </div>
-                            ) : (
-                                unassignedMembers.map((member) => (
-                                    <div key={member.id} className="p-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarFallback className="text-xs">
-                                                    {member.firstName[0]}{member.lastName[0]}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-sm">{member.firstName} {member.lastName}</span>
-                                        </div>
-                                        <AssignmentActions
-                                            memberId={member.id}
-                                            memberName={`${member.firstName} ${member.lastName}`}
-                                            shepherds={shepherdList}
-                                        />
-                                    </div>
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
+                    <UnassignedMembersList
+                        initialMembers={unassignedMembers}
+                        shepherds={shepherdList.map(s => ({ id: s.id, firstName: s.firstName, lastName: s.lastName }))}
+                        totalUnassigned={stats.unassigned}
+                    />
                 </div>
             </div>
         </div>

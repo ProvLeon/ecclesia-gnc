@@ -7,6 +7,27 @@ import { revalidatePath } from 'next/cache'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendSMS } from './messages'
+import { randomUUID } from 'crypto'
+
+export async function ensurePortalToken(memberId: string) {
+  const [member] = await db
+    .select({ portalToken: members.portalToken })
+    .from(members)
+    .where(eq(members.id, memberId))
+    .limit(1)
+
+  if (member?.portalToken) {
+    return member.portalToken
+  }
+
+  const newToken = randomUUID()
+  await db
+    .update(members)
+    .set({ portalToken: newToken })
+    .where(eq(members.id, memberId))
+
+  return newToken
+}
 
 export type MemberFilters = {
   search?: string
@@ -470,6 +491,7 @@ export async function createMember(data: CreateMemberInput) {
     await db.insert(members).values({
       ...data,
       memberId,
+      portalToken: randomUUID(),
     })
 
     revalidatePath('/members')

@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db'
 import { followUps, members, shepherds, shepherdAssignments, users } from '@/lib/db/schema'
-import { eq, desc, sql, and } from 'drizzle-orm'
+import { eq, desc, sql, and, or, ilike } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { getUser } from '@/app/actions/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -324,4 +324,41 @@ export async function getActiveShepherds() {
     .innerJoin(members, eq(shepherds.memberId, members.id))
     .where(eq(shepherds.isActive, true))
     .orderBy(desc(shepherds.assignedDate))
+}
+
+export async function searchUnassignedMembers(query: string = '') {
+  // We want active members who are NOT currently assigned to a shepherd (active assignment)
+  // Subquery approach or left join + check null
+  // But since we can't easily do subqueries in drizzle without raw sql or multiple queries sometimes
+  // Raw SQL is fine for the NOT IN part or we can use the existing approach.
+
+  // Note: importing or, ilike, notInArray from drizzle-orm if not present at top.
+  // 'or' and 'ilike' are not imported in the file currently. 'and' is.
+  // I need to add them to imports first.
+
+  const conditions = [
+    eq(members.memberStatus, 'active'),
+    sql`${members.id} NOT IN (
+            SELECT member_id FROM shepherd_assignments WHERE is_active = true
+        )`
+  ]
+
+  if (query) {
+    const searchPattern = `%${query}%`
+    conditions.push(
+      sql`(${members.firstName} ILIKE ${searchPattern} OR ${members.lastName} ILIKE ${searchPattern} OR ${members.phonePrimary} ILIKE ${searchPattern} OR concat(${members.firstName}, ' ', ${members.lastName}) ILIKE ${searchPattern})`
+    )
+  }
+
+  return db
+    .select({
+      id: members.id,
+      firstName: members.firstName,
+      lastName: members.lastName,
+      phone: members.phonePrimary,
+    })
+    .from(members)
+    .where(and(...conditions))
+    .orderBy(members.firstName)
+    .limit(50)
 }

@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db'
 import { attendance, services, members } from '@/lib/db/schema'
-import { eq, desc, sql, and, gte, lte } from 'drizzle-orm'
+import { eq, desc, sql, and, gte, lte, or, ilike } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 interface ServiceFilters {
@@ -164,28 +164,30 @@ export async function getAttendanceStats() {
     }
 }
 
-export async function getMembersForAttendance(scopedMemberIds?: string[] | null) {
-    // Base query
-    const baseConditions = [eq(members.memberStatus, 'active')]
+export async function getMembersForAttendance(scopedMemberIds?: string[] | null, query?: string) {
+    // Base conditions
+    const conditions = [eq(members.memberStatus, 'active')]
 
     // If scoped, add member ID filter
     if (scopedMemberIds && scopedMemberIds.length > 0) {
         const { inArray } = await import('drizzle-orm')
-        const results = await db
-            .select({
-                id: members.id,
-                memberId: members.memberId,
-                name: sql<string>`concat(${members.firstName}, ' ', ${members.lastName})`,
-                phone: members.phonePrimary,
-            })
-            .from(members)
-            .where(and(eq(members.memberStatus, 'active'), inArray(members.id, scopedMemberIds)))
-            .orderBy(members.firstName)
-            .limit(100)
-        return results
+        conditions.push(inArray(members.id, scopedMemberIds))
     }
 
-    // Full access
+    // If query provided, add search filter
+    if (query) {
+        const searchPattern = `%${query}%`
+        conditions.push(
+            or(
+                ilike(members.firstName, searchPattern),
+                ilike(members.lastName, searchPattern),
+                ilike(members.memberId, searchPattern),
+                ilike(members.phonePrimary, searchPattern),
+                sql`concat(${members.firstName}, ' ', ${members.lastName}) ILIKE ${searchPattern}`
+            )
+        )
+    }
+
     const results = await db
         .select({
             id: members.id,
@@ -194,7 +196,7 @@ export async function getMembersForAttendance(scopedMemberIds?: string[] | null)
             phone: members.phonePrimary,
         })
         .from(members)
-        .where(eq(members.memberStatus, 'active'))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(members.firstName)
         .limit(100)
 
