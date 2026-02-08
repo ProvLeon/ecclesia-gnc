@@ -89,11 +89,19 @@ export async function searchMembersForDepartment(departmentId: string, query: st
         .where(eq(memberDepartments.departmentId, departmentId))
         .then(rows => rows.map(r => r.id))
 
-    const searchConditions = or(
-        ilike(members.firstName, `%${query}%`),
-        ilike(members.lastName, `%${query}%`),
-        ilike(members.email, `%${query}%`)
-    )
+    // Add search conditions
+    let searchConditions
+    if (query) {
+        const { getSearchConditions } = await import('@/lib/db/utils')
+        const conditions = getSearchConditions(query, [
+            members.firstName,
+            members.lastName,
+            members.email
+        ])
+        if (conditions) {
+            searchConditions = conditions
+        }
+    }
 
     const whereClause = existingMemberIds.length > 0
         ? and(searchConditions, notInArray(members.id, existingMemberIds))

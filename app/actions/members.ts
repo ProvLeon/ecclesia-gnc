@@ -56,16 +56,20 @@ export async function getMembers(filters: MemberFilters = {}) {
   // Build where conditions
   const conditions = []
 
+  let searchConditions
   if (search) {
-    conditions.push(
-      or(
-        ilike(members.firstName, `%${search}%`),
-        ilike(members.lastName, `%${search}%`),
-        ilike(members.phonePrimary, `%${search}%`),
-        ilike(members.email, `%${search}%`),
-        ilike(members.memberId, `%${search}%`)
-      )
-    )
+    const { getSearchConditions } = await import('@/lib/db/utils')
+    searchConditions = getSearchConditions(search, [
+      members.firstName,
+      members.lastName,
+      members.phonePrimary,
+      members.email,
+      members.memberId
+    ])
+  }
+
+  if (searchConditions) {
+    conditions.push(searchConditions)
   }
 
   if (status && status !== 'all') {

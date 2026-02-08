@@ -174,18 +174,26 @@ export async function getMembersForAttendance(scopedMemberIds?: string[] | null,
         conditions.push(inArray(members.id, scopedMemberIds))
     }
 
+
     // If query provided, add search filter
     if (query) {
-        const searchPattern = `%${query}%`
-        conditions.push(
-            or(
-                ilike(members.firstName, searchPattern),
-                ilike(members.lastName, searchPattern),
-                ilike(members.memberId, searchPattern),
-                ilike(members.phonePrimary, searchPattern),
-                sql`concat(${members.firstName}, ' ', ${members.lastName}) ILIKE ${searchPattern}`
-            )
-        )
+        // Use getSearchConditions helper from lib/db/utils
+        const { getSearchConditions } = await import('@/lib/db/utils')
+        const searchConditions = getSearchConditions(query, [
+            members.firstName,
+            members.lastName,
+            members.memberId,
+            members.phonePrimary,
+            // Also search concatenated name?
+            // getSearchConditions handles individual fields.
+            // If we want to support "John Doe", searching "John" against firstName OR lastName works.
+            // If we search "John Doe", getSearchConditions will make:
+            // (firstName like %John% OR lastName like %John%) AND (firstName like %Doe% OR lastName like %Doe%)
+            // This is actually BETTER than strict concat search because it handles "Doe John" too.
+        ])
+        if (searchConditions) {
+            conditions.push(searchConditions)
+        }
     }
 
     const results = await db

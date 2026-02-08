@@ -344,10 +344,15 @@ export async function searchUnassignedMembers(query: string = '') {
   ]
 
   if (query) {
-    const searchPattern = `%${query}%`
-    conditions.push(
-      sql`(${members.firstName} ILIKE ${searchPattern} OR ${members.lastName} ILIKE ${searchPattern} OR ${members.phonePrimary} ILIKE ${searchPattern} OR concat(${members.firstName}, ' ', ${members.lastName}) ILIKE ${searchPattern})`
-    )
+    const { getSearchConditions } = await import('@/lib/db/utils')
+    const searchConditions = getSearchConditions(query, [
+      members.firstName,
+      members.lastName,
+      members.phonePrimary
+    ])
+    if (searchConditions) {
+      conditions.push(searchConditions)
+    }
   }
 
   return db

@@ -246,16 +246,21 @@ export async function getMembersForFinance(query?: string) {
     .where(eq(members.memberStatus, 'active'))
 
   if (query) {
-    const searchPattern = `%${query}%`
-    baseQuery.where(
-      and(
-        eq(members.memberStatus, 'active'),
-        or(
-          sql`concat(${members.firstName}, ' ', ${members.lastName}) ILIKE ${searchPattern}`,
-          sql`${members.memberId} ILIKE ${searchPattern}`
+    const { getSearchConditions } = await import('@/lib/db/utils')
+    const searchConditions = getSearchConditions(query, [
+      members.firstName,
+      members.lastName,
+      members.memberId,
+      members.phonePrimary
+    ])
+    if (searchConditions) {
+      baseQuery.where(
+        and(
+          eq(members.memberStatus, 'active'),
+          searchConditions
         )
       )
-    )
+    }
   }
 
   return baseQuery
