@@ -50,15 +50,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      conditions.push(
-        or(
-          ilike(members.firstName, `%${search}%`),
-          ilike(members.lastName, `%${search}%`),
-          ilike(members.phonePrimary, `%${search}%`),
-          ilike(members.email, `%${search}%`),
-          ilike(members.memberId, `%${search}%`)
-        )
-      )
+      const { getSearchConditions } = await import('@/lib/db/utils')
+      const searchConditions = getSearchConditions(search, [
+        members.firstName,
+        members.lastName,
+        members.phonePrimary,
+        members.email,
+        members.memberId
+      ])
+
+      if (searchConditions) {
+        conditions.push(searchConditions)
+      }
     }
 
     if (status && status !== 'all') {
