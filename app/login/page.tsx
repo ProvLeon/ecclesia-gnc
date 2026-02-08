@@ -42,7 +42,7 @@ export default function LoginPage() {
                     {/* Logo */}
                     <div className="flex justify-center">
                         <Image
-                            src="/gnc_final_logomark.png"
+                            src="/gncag_logomark_L.png"
                             alt="GNCAG Logo"
                             width={120}
                             height={120}
